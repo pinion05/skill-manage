@@ -61,7 +61,7 @@
 - Produces: `resolveOfficialRegistry(home, environment)`
 - Produces: `matchOfficialRoot(rootPath, home, environment)`
 
-- [ ] **Step 1: Write failing registry tests**
+- [x] **Step 1: Write failing registry tests**
 
 Create `official-sources.test.ts` with assertions that Claude uses `CLAUDE_CONFIG_DIR`, Codex retains `$HOME/.agents/skills`, `$CODEX_HOME/skills`, and `/etc/codex/skills`, Pi uses `PI_CODING_AGENT_DIR`, Qwen does not gain an unverified `.agents` root, and unsupported names are absent.
 
@@ -82,13 +82,13 @@ expect(agent(registry, "qwen").globalPaths).not.toContain("/Users/me/.agents/ski
 expect(registry.agents.map(({ id }) => id)).not.toContain("devin");
 ```
 
-- [ ] **Step 2: Verify the registry test fails for the missing module**
+- [x] **Step 2: Verify the registry test fails for the missing module**
 
 Run: `npm test -- src/lib/inventory/official-sources.test.ts`
 
 Expected: FAIL because `official-sources.ts` does not exist.
 
-- [ ] **Step 3: Add source response types**
+- [x] **Step 3: Add source response types**
 
 Extend `types.ts` with the approved interfaces and add required fields:
 
@@ -105,17 +105,17 @@ export interface InventorySnapshot {
 }
 ```
 
-- [ ] **Step 4: Implement the registry and pure expansion/matching helpers**
+- [x] **Step 4: Implement the registry and pure expansion/matching helpers**
 
 Represent every root relation with `kind`, documented display path, and either a fixed global resolver or a project suffix pattern. Aggregate duplicate physical spellings by lexical root while preserving all agent relations. Include only the products and paths listed in `docs/superpowers/specs/2026-07-18-official-skill-sources-design.md`.
 
-- [ ] **Step 5: Run registry tests and type-aware existing tests**
+- [x] **Step 5: Run registry tests and type-aware existing tests**
 
 Run: `npm test -- src/lib/inventory/official-sources.test.ts src/lib/inventory/store.test.ts src/components/dashboard/SkillDashboard.test.tsx`
 
 Expected: registry assertions PASS; existing fixtures may initially report missing required fields, then PASS after adding `sourceSightings`, `scanMode`, and empty `officialSources` to fixture builders.
 
-- [ ] **Step 6: Commit Task 1**
+- [x] **Step 6: Commit Task 1**
 
 ```bash
 git add src/lib/inventory/types.ts src/lib/inventory/official-sources.ts src/lib/inventory/official-sources.test.ts src/lib/inventory/store.test.ts src/components/dashboard/SkillDashboard.test.tsx
@@ -137,7 +137,7 @@ git commit -m "feat(scan): 공식 Skill 소스 registry 추가"
 - Produces: `annotateFullInventory(snapshot, options?): Promise<InventorySnapshot>`
 - Extends: `ScanOptions.followDirectoryLinks`
 
-- [ ] **Step 1: Write failing discovery tests**
+- [x] **Step 1: Write failing discovery tests**
 
 Build a temporary home containing global `.claude/skills`, two nested projects with `.agents/skills` and `.factory/skills`, excluded `node_modules/.agents/skills`, excluded `.claude/projects/.../.agents/skills`, and a root symlink to a shared directory. Assert that official discovery finds only allowed roots and reports missing fixed globals without aborting.
 
@@ -151,17 +151,17 @@ expect(snapshot.skills.find(({ name }) => name === "shared")!.sourceSightings.le
 expect(new Set(snapshot.skills.map(({ inode }) => inode)).size).toBe(snapshot.skills.length);
 ```
 
-- [ ] **Step 2: Verify discovery tests fail for the missing implementation**
+- [x] **Step 2: Verify discovery tests fail for the missing implementation**
 
 Run: `npm test -- src/lib/inventory/official-discovery.test.ts`
 
 Expected: FAIL because `official-discovery.ts` does not exist.
 
-- [ ] **Step 3: Add opt-in symlink directory traversal to the base scanner**
+- [x] **Step 3: Add opt-in symlink directory traversal to the base scanner**
 
 Add `followDirectoryLinks: boolean` defaulting to `false`. When enabled, enqueue only directory links whose target top-level contains a regular `SKILL.md`; collection or broad-root links remain diagnostics and are not expanded. Before processing any directory, claim `(st_dev, st_ino)` in a visited set so cycles and multiple aliases cannot create unbounded traversal. Apply a separate main traversal directory budget and continue recording link health through the existing `inspectLink` path.
 
-- [ ] **Step 4: Verify scanner symlink behavior**
+- [x] **Step 4: Verify scanner symlink behavior**
 
 Add a scanner test where a skill directory symlink points to a target and another link points back to an already visited directory. Assert one skill record, finite completion, and both link diagnostics. Run:
 
@@ -169,15 +169,15 @@ Add a scanner test where a skill directory symlink points to a target and anothe
 
 Expected: all scanner tests PASS and default full mode still does not follow links.
 
-- [ ] **Step 5: Implement bounded official project discovery**
+- [x] **Step 5: Implement bounded official project discovery**
 
 Walk only `home`, never arbitrary fixed roots, with queue concurrency and a directory budget. Match exact and documented wildcard suffixes from the registry. Keep ambiguous generic patterns such as OpenClaw `<workspace>/skills` display-only unless a product-specific workspace source is available; do not infer them from arbitrary Git repositories. Do not enqueue matched Skill roots. Prune dependency/build/cache/vendor/backup names and exact session/state roots derived from environment-aware client homes. Resolve each root with `lstat`/`realpath`/`stat`; retain missing globals as `exists: false` and sanitize errors.
 
-- [ ] **Step 6: Implement official scan and full annotation**
+- [x] **Step 6: Implement official scan and full annotation**
 
 Scan each unique canonical root identity once. Group `SkillRecord` values by `${device}:${inode}`, choose the first stable record, and add every lexical source path to `sourceSightings`. Populate each serialized root’s `skillCount`. `annotateFullInventory` must retain all full records while attaching matching official sightings and the official agent catalog.
 
-- [ ] **Step 7: Run focused and regression tests**
+- [x] **Step 7: Run focused and regression tests**
 
 Run:
 
@@ -187,7 +187,7 @@ npm test -- src/lib/inventory/official-discovery.test.ts src/lib/inventory/scann
 
 Expected: all focused filesystem and security tests PASS.
 
-- [ ] **Step 8: Commit Task 2**
+- [x] **Step 8: Commit Task 2**
 
 ```bash
 git add src/lib/inventory/official-discovery.ts src/lib/inventory/official-discovery.test.ts src/lib/inventory/scanner.ts src/lib/inventory/scanner.test.ts
@@ -211,7 +211,7 @@ git commit -m "feat(scan): 공식 경로 discovery와 alias dedupe 추가"
 - Produces: `scanInventoryForMode(mode: ScanMode): Promise<InventorySnapshot>`
 - Changes: `getInventory(mode?: ScanMode)`, `refreshInventory(mode?: ScanMode)`, `getSkillContent(id, mode?: ScanMode)`
 
-- [ ] **Step 1: Write failing mode/store tests**
+- [x] **Step 1: Write failing mode/store tests**
 
 Assert missing mode resolves to `official`, invalid input throws `InvalidScanModeError`, concurrent requests share only the same mode’s Promise, refresh changes only that mode, and an ID from the full snapshot is rejected against the official snapshot.
 
@@ -224,17 +224,17 @@ expect(scan).toHaveBeenNthCalledWith(2, "full");
 await expect(store.getSkillContent("full-only", "official")).rejects.toBeInstanceOf(SkillNotFoundError);
 ```
 
-- [ ] **Step 2: Verify focused tests fail with the old signatures**
+- [x] **Step 2: Verify focused tests fail with the old signatures**
 
 Run: `npm test -- src/lib/inventory/scan-mode.test.ts src/lib/inventory/store.test.ts`
 
 Expected: FAIL because mode parser/dispatcher and mode-keyed store do not exist.
 
-- [ ] **Step 3: Implement parser, dispatcher, and mode-keyed Maps**
+- [x] **Step 3: Implement parser, dispatcher, and mode-keyed Maps**
 
 `parseScanMode(null)` returns `official`; only exact `official` and `full` are accepted. Store `snapshots` and `inFlight` in `Map<ScanMode, ...>`. A failed refresh must preserve only that mode’s previous snapshot.
 
-- [ ] **Step 4: Add API mode parsing and invalid-mode tests**
+- [x] **Step 4: Add API mode parsing and invalid-mode tests**
 
 Routes read `url.searchParams.get("mode")` before scanning. `InvalidScanModeError` returns:
 
@@ -247,7 +247,7 @@ Response.json(
 
 Call route handlers with invalid URLs in `routes.test.ts` and assert status `400` without filesystem work.
 
-- [ ] **Step 5: Run store/API tests**
+- [x] **Step 5: Run store/API tests**
 
 Run:
 
@@ -257,7 +257,7 @@ npm test -- src/lib/inventory/scan-mode.test.ts src/lib/inventory/store.test.ts 
 
 Expected: all mode, cache, refresh, and validation tests PASS.
 
-- [ ] **Step 6: Commit Task 3**
+- [x] **Step 6: Commit Task 3**
 
 ```bash
 git add src/lib/inventory/scan-mode.ts src/lib/inventory/scan-mode.test.ts src/lib/inventory/store.ts src/lib/inventory/store.test.ts src/pages/api
@@ -278,7 +278,7 @@ git commit -m "feat(api): scan mode별 snapshot 제공"
 - Changes: `SkillDetail` receives `scanMode: ScanMode`
 - Requests: `/api/inventory?mode=...`, `/api/inventory/refresh?mode=...`, `/api/skills/content?id=...&mode=...`
 
-- [ ] **Step 1: Write failing dashboard tests**
+- [x] **Step 1: Write failing dashboard tests**
 
 Update the inventory fixture with `scanMode`, `officialSources`, and source sightings. Assert:
 
@@ -292,29 +292,29 @@ expect(screen.getByRole("link", { name: /Claude Code 공식 문서/ })).toHaveAt
 
 Open a detail record and assert every alias path and agent is visible; assert content fetch includes the current mode.
 
-- [ ] **Step 2: Verify dashboard tests fail for missing controls and source tab**
+- [x] **Step 2: Verify dashboard tests fail for missing controls and source tab**
 
 Run: `npm test -- src/components/dashboard/SkillDashboard.test.tsx`
 
 Expected: FAIL because mode controls, source tab, and mode-aware content URL are absent.
 
-- [ ] **Step 3: Implement mode-keyed dashboard resource**
+- [x] **Step 3: Implement mode-keyed dashboard resource**
 
 Use a `ScanMode` signal initialized to `official` as the Solid resource source. Switching mode clears the selected detail and current rendered snapshot before requesting the selected server cache. Refresh posts only the selected mode. Keep all existing filters and tabs scoped to the current snapshot.
 
-- [ ] **Step 4: Implement the official source provenance ledger**
+- [x] **Step 4: Implement the official source provenance ledger**
 
 Render a ruled list, not a card grid. Each agent row contains name, first-party link with `target="_blank" rel="noreferrer noopener"`, global/project patterns, discovered root state, source kind, and Skill count. Include only `summary.agents` supplied by the verified registry.
 
-- [ ] **Step 5: Add detail source sightings**
+- [x] **Step 5: Add detail source sightings**
 
 Pass `scanMode` to `SkillDetail`, append it to the content URL, and render `sourceSightings` under a heading `공식 소스 경로`. Keep existing canonical path copy, focus trap, Escape, and trigger focus restoration.
 
-- [ ] **Step 6: Add responsive, keyboard-visible styles**
+- [x] **Step 6: Add responsive, keyboard-visible styles**
 
 Extend the existing blueprint ledger system with `.scan-mode-control`, `.official-sources`, `.official-agent-row`, and `.source-sighting-list`. At 760px use one-column metadata and allow all paths to wrap with `overflow-wrap: anywhere`. Add `:focus-visible` affordances and a `prefers-reduced-motion` override for scan/row/panel animation.
 
-- [ ] **Step 7: Run dashboard and complete component tests**
+- [x] **Step 7: Run dashboard and complete component tests**
 
 Run:
 
@@ -324,7 +324,7 @@ npm test -- src/components/dashboard/SkillDashboard.test.tsx src/lib/dashboard/d
 
 Expected: mode, source, detail, duplicate, filter, focus, and refresh tests PASS.
 
-- [ ] **Step 8: Commit Task 4**
+- [x] **Step 8: Commit Task 4**
 
 ```bash
 git add src/components/dashboard
@@ -337,11 +337,11 @@ git commit -m "feat(ui): 공식 Skill 소스 검색 범위 추가"
 - Modify: `README.md`
 - Modify: `docs/superpowers/plans/2026-07-18-official-skill-sources.md`
 
-- [ ] **Step 1: Update user documentation**
+- [x] **Step 1: Update user documentation**
 
 Document official mode as default, explicit full mode, environment-aware roots, home-wide project suffix discovery, source tab, physical dedupe, and the fact that unsupported paths are not guessed.
 
-- [ ] **Step 2: Run complete automated verification**
+- [x] **Step 2: Run complete automated verification**
 
 Run:
 
@@ -353,7 +353,7 @@ git status --short
 
 Expected: every Vitest test PASS, Astro diagnostics report 0 errors/warnings/hints, production build exits 0, and only intended files are changed.
 
-- [ ] **Step 3: Run production API smoke**
+- [x] **Step 3: Run production API smoke**
 
 Start the built server on loopback and verify:
 
@@ -365,21 +365,21 @@ curl -s -o /dev/null -w '%{http_code}' 'http://127.0.0.1:4321/api/inventory?mode
 
 Expected: official assertion true, full assertion true, invalid status `400`.
 
-- [ ] **Step 4: Run browser QA at desktop and 390px**
+- [x] **Step 4: Run browser QA at desktop and 390px**
 
 Verify default official mode, explicit full switch, refresh URL/label, source agent/doc links, source counts, Skill detail aliases, no pagination, Escape focus restoration, and no horizontal overflow at 390px.
 
-- [ ] **Step 5: Request independent review**
+- [x] **Step 5: Request independent review**
 
 Review the feature range from the pre-feature commit through HEAD against this plan, focusing on first-party evidence fidelity, root discovery performance, symlink security, physical dedupe, mode cache isolation, accessibility, and full-mode regressions. Fix every Critical and Important issue with a failing regression test first.
 
-- [ ] **Step 6: Re-run complete verification after review fixes**
+- [x] **Step 6: Re-run complete verification after review fixes**
 
 Run: `npm run verify && git diff --check`
 
 Expected: all tests/check/build PASS after remediation.
 
-- [ ] **Step 7: Commit final documentation/remediation**
+- [x] **Step 7: Commit final documentation/remediation**
 
 ```bash
 git add README.md docs/superpowers src
