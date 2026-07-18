@@ -124,7 +124,7 @@ describe("resolveOfficialRegistry", () => {
     expect(qwenShared?.agents).not.toContain("Qwen Code");
   });
 
-  it("matches dynamic documented roots but only treats plain skills folders as marked workspaces", () => {
+  it("matches dynamic documented roots without guessing which plain skills folder is an OpenClaw workspace", () => {
     const registry = resolveOfficialRegistry("/Users/me", {});
 
     expect(
@@ -140,8 +140,9 @@ describe("resolveOfficialRegistry", () => {
     expect(
       matchOfficialRoot("/Users/me/dev/openclaw-workspace/skills", registry, {
         workspaceMarker: true,
-      })?.agents,
-    ).toContain("OpenClaw");
+      }),
+    ).toBeUndefined();
+    expect(agent(registry, "openclaw").projectPaths).toContain("**/skills");
     expect(
       matchOfficialRoot("/Users/me/Downloads/random/skills", registry, {
         workspaceMarker: false,

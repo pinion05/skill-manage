@@ -61,6 +61,7 @@ const PRUNED_DIRECTORY_NAMES = new Set([
   ".astro",
   ".cache",
   ".Trash",
+  "vendor_imports",
 ]);
 
 const SAFE_ERROR_MESSAGES: Record<string, string> = {
@@ -129,6 +130,13 @@ function sessionAndCacheRoots(home: string, environment: Environment): string[] 
     path.join(piHome, "sessions"),
     path.join(home, ".qwen", "tmp"),
     path.join(home, ".local", "share", "opencode"),
+    path.join(home, ".codex", ".tmp"),
+    path.join(home, ".codex", "vendor_imports"),
+    path.join(home, ".omx", "backups"),
+    path.join(home, ".zcode", "cli", "plugins", "cache"),
+    path.join(home, ".zcode", "cli", "plugins", "marketplaces"),
+    path.join(home, ".vscode", "extensions"),
+    path.join(home, "Library", "Application Support"),
     path.join(home, "Library", "Caches"),
     path.join(home, ".npm", "_cacache"),
     path.join(home, ".bun", "install", "cache"),

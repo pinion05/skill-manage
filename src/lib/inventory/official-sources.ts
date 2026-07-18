@@ -27,6 +27,7 @@ interface PatternRootDefinition {
   kind: OfficialSourceKind;
   scope: "user" | "project";
   workspaceMarker?: boolean;
+  discoverable?: boolean;
 }
 
 type GlobalRootDefinition = FixedGlobalRootDefinition | PatternRootDefinition;
@@ -158,6 +159,7 @@ function projectRoot(
   pattern: string,
   kind: OfficialSourceKind,
   workspaceMarker = false,
+  discoverable = true,
 ): ProjectRootDefinition {
   return {
     type: "pattern",
@@ -166,6 +168,7 @@ function projectRoot(
     kind,
     scope: "project",
     workspaceMarker,
+    discoverable,
   };
 }
 
@@ -333,7 +336,7 @@ export const OFFICIAL_AGENT_DEFINITIONS: OfficialAgentDefinition[] = [
     name: "OpenClaw",
     documentationUrl: "https://docs.openclaw.ai/tools/skills",
     globalRoots: [sharedUser(), fixedHome(".openclaw/skills", "native")],
-    projectRoots: [projectRoot("skills", "native", true), sharedProject()],
+    projectRoots: [projectRoot("skills", "native", true, false), sharedProject()],
   },
   {
     id: "github-copilot-cli",
@@ -548,6 +551,7 @@ export function resolveOfficialRegistry(
     const projectPaths: string[] = [];
     for (const root of definition.projectRoots) {
       projectPaths.push(root.displayPath);
+      if (root.discoverable === false) continue;
       const key = `${root.pattern}:${root.workspaceMarker === true}`;
       const existing = projectPatterns.get(key) ?? {
         displayPath: root.displayPath,

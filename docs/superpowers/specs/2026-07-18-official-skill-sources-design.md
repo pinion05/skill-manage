@@ -105,12 +105,13 @@ Hermes profile과 Roo mode처럼 이름이 동적인 공식 경로는 제한된 
 
 ### 프로젝트 경로
 
-홈 디렉터리를 한 번 순회하며 registry에 등록된 suffix만 찾는다. 예를 들어 `.claude/skills`, `.agents/skills`, `.factory/skills`는 어느 깊이에 있어도 프로젝트 root로 수집한다. OpenClaw의 일반 `<workspace>/skills`는 부모가 `.git` 또는 `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod` 같은 workspace marker를 가진 경우에만 자동 수집한다.
+홈 디렉터리를 한 번 순회하며 registry에 등록된 고유 suffix만 찾는다. 예를 들어 `.claude/skills`, `.agents/skills`, `.factory/skills`는 어느 깊이에 있어도 프로젝트 root로 수집한다. OpenClaw의 일반 `<workspace>/skills`처럼 lexical path만으로 어느 제품 workspace인지 판별할 수 없는 패턴은 공식 소스 원장에 문서 경로로 표시하되 자동 수집하지 않는다. 임의 Git 저장소를 OpenClaw workspace라고 추측하지 않으며, 해당 workspace의 `.agents/skills`는 고유 suffix로 계속 발견한다.
 
 다음은 traversal에서 제외한다.
 
 - `.git`, `node_modules`, `.venv`, `venv`, `vendor`, `dist`, `build`, `target`, `.next`, `.astro`, `.cache`, `.Trash`
-- `Library/Caches`, npm/bun cache
+- `Library/Caches`, `Library/Application Support`, npm/bun cache
+- `.codex/.tmp`, `.codex/vendor_imports`, `.omx/backups`, ZCode plugin cache/marketplace, VS Code extension cache
 - Claude `projects`, Codex/Pi `sessions`, Hermes session/state 영역, Qwen `tmp`, OpenCode application data
 
 순회에는 제한된 동시성, 최대 directory budget, symlink 비추적, 접근 오류 샘플 상한을 둔다. 공식 root 자체가 symlink이면 root 해석 단계에서만 target을 검증한다.

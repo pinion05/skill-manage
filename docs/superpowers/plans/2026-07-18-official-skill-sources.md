@@ -171,7 +171,7 @@ Expected: all scanner tests PASS and default full mode still does not follow lin
 
 - [ ] **Step 5: Implement bounded official project discovery**
 
-Walk only `home`, never arbitrary fixed roots, with queue concurrency and a directory budget. Match exact and documented wildcard suffixes from the registry. Do not enqueue matched Skill roots. Prune dependency/build/cache names and exact session/state roots derived from environment-aware client homes. Resolve each root with `lstat`/`realpath`/`stat`; retain missing globals as `exists: false` and sanitize errors.
+Walk only `home`, never arbitrary fixed roots, with queue concurrency and a directory budget. Match exact and documented wildcard suffixes from the registry. Keep ambiguous generic patterns such as OpenClaw `<workspace>/skills` display-only unless a product-specific workspace source is available; do not infer them from arbitrary Git repositories. Do not enqueue matched Skill roots. Prune dependency/build/cache/vendor/backup names and exact session/state roots derived from environment-aware client homes. Resolve each root with `lstat`/`realpath`/`stat`; retain missing globals as `exists: false` and sanitize errors.
 
 - [ ] **Step 6: Implement official scan and full annotation**
 

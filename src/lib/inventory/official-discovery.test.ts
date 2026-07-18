@@ -56,6 +56,25 @@ describe("discoverOfficialRoots", () => {
       "skills",
     );
     const unmarkedPlainSkills = path.join(home, "Downloads", "random", "skills");
+    const excludedCodexTemp = path.join(home, ".codex", ".tmp", "plugin", ".agents", "skills");
+    const excludedOmxBackup = path.join(
+      home,
+      ".omx",
+      "backups",
+      "snapshot",
+      ".codex",
+      "skills",
+    );
+    const excludedPluginCache = path.join(
+      home,
+      ".zcode",
+      "cli",
+      "plugins",
+      "cache",
+      "package",
+      ".agents",
+      "skills",
+    );
 
     await Promise.all([
       writeSkill(globalClaude, "global-claude"),
@@ -66,6 +85,9 @@ describe("discoverOfficialRoots", () => {
       writeSkill(excludedDependency, "dependency-noise"),
       writeSkill(excludedSession, "session-noise"),
       writeSkill(unmarkedPlainSkills, "plain-noise"),
+      writeSkill(excludedCodexTemp, "codex-temp-noise"),
+      writeSkill(excludedOmxBackup, "backup-noise"),
+      writeSkill(excludedPluginCache, "plugin-cache-noise"),
       mkdir(path.join(openClawWorkspace, ".git"), { recursive: true }),
     ]);
 
@@ -83,11 +105,18 @@ describe("discoverOfficialRoots", () => {
         projectShared,
         projectFactory,
         hermesProfile,
-        openClawSkills,
       ]),
     );
     expect(existing).not.toEqual(
-      expect.arrayContaining([excludedDependency, excludedSession, unmarkedPlainSkills]),
+      expect.arrayContaining([
+        openClawSkills,
+        excludedDependency,
+        excludedSession,
+        unmarkedPlainSkills,
+        excludedCodexTemp,
+        excludedOmxBackup,
+        excludedPluginCache,
+      ]),
     );
     expect(
       discovery.roots.find(({ path: rootPath }) => rootPath === path.join(home, ".qwen", "skills")),

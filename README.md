@@ -1,6 +1,6 @@
 # Skill Atlas
 
-Astro SSR와 Solid.js로 만든 macOS 로컬 코딩 에이전트 skill 인벤토리입니다. 현재 파일시스템의 `SKILL.md`, `skills.md`, skill 심볼릭 링크를 읽어 검색·필터·상세 보기로 제공합니다.
+Astro SSR와 Solid.js로 만든 macOS 로컬 코딩 에이전트 skill 인벤토리입니다. 공식 문서로 확인한 Skill 디렉터리를 기본 범위로 사용해 `SKILL.md`, `skills.md`, skill 심볼릭 링크를 읽고 검색·필터·상세 보기로 제공합니다.
 
 ## 실행
 
@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-브라우저에서 <http://127.0.0.1:4321>을 엽니다. 최초 검색은 파일 수에 따라 약 1분 걸릴 수 있으며, 이후 조회는 프로세스 메모리 캐시를 사용합니다.
+브라우저에서 <http://127.0.0.1:4321>을 엽니다. 기본 공식 경로 검색은 홈 아래 프로젝트를 한 번 조사하며, 명시적으로 선택하는 전체 파일시스템 검색은 파일 수에 따라 약 1분 이상 걸릴 수 있습니다. 이후 조회는 검색 mode별 프로세스 메모리 cache를 사용합니다.
 
 production build:
 
@@ -22,20 +22,44 @@ npm start
 
 ## 제공 기능
 
+- 공식 문서·공식 저장소에서 확인된 사용자·프로젝트 Skill 디렉터리를 기본 검색
+- 필요할 때만 별도로 실행하는 전체 파일시스템 검색 mode
 - 현재 파일시스템을 직접 검색하며 `/tmp` 보고서에 의존하지 않음
 - skill 이름·설명·에이전트·절대경로 검색
 - 파일 유형·경로 성격·설정 루트 필터
 - 이름·수정일·경로 정렬과 검색·필터 결과 전체 원장 표시
 - 이름 기준 중복 설치 탭과 모든 설정 루트·경로 표시
 - 안전하게 렌더링한 Markdown 상세 보기
+- 공식 agent·근거 문서·경로·발견 상태를 보여주는 공식 소스 원장
+- 같은 물리 파일의 공식 alias는 한 번만 표시하고 모든 source sighting 보존
 - 정상·깨진 심볼릭 링크 구분
 - 권한 오류 집계
-- 버튼을 통한 수동 전체 재검색
+- 현재 선택한 검색 mode만 갱신하는 수동 재검색
 - 데스크톱·모바일 반응형 화면
 
 ## 검색 범위
 
-기본 검색 루트:
+### 공식 디렉터리 — 기본값
+
+공식 제품 문서 또는 제품 소유 조직의 저장소에서 정확한 `SKILL.md` root가 확인된 에이전트만 registry에 포함합니다. 사용자 전역 root와 `$HOME` 아래 모든 프로젝트에서 `.agents/skills`, `.claude/skills`, `.pi/skills`, `.factory/skills` 등 각 제품이 실제로 문서화한 suffix를 찾습니다. Agent Skills 명세가 경로를 강제한다고 가정하거나, 세션 저장 위치에서 Skill 경로를 추측하지 않습니다.
+
+다음 환경변수 기반 공식 root도 반영합니다.
+
+- `CLAUDE_CONFIG_DIR`
+- `CODEX_HOME`
+- `HERMES_HOME`
+- `PI_CODING_AGENT_DIR`
+- `KIMI_CODE_HOME`
+- `CRUSH_SKILLS_DIR`
+- `XDG_CONFIG_HOME`
+
+`공식 소스` 탭에서 포함된 에이전트, first-party 문서 링크, 전역·프로젝트 경로 패턴, 현재 머신의 발견 상태를 확인할 수 있습니다. 정확한 경로가 확인되지 않은 제품은 후보 경로를 만들어 표시하지 않습니다. OpenClaw `<workspace>/skills`처럼 경로만으로 어느 제품 workspace인지 구분할 수 없는 일반 패턴은 문서에는 표시하지만 임의 Git 저장소를 추측해 자동 수집하지 않습니다.
+
+프로젝트 discovery는 `.git`, `node_modules`, 가상환경, build 산출물, cache와 Claude/Codex/Pi/Qwen/OpenCode의 세션·대화·상태 영역을 제외합니다. 공식 root가 symlink이면 target identity를 검증하고, 같은 실제 root나 파일을 가리키는 여러 alias는 한 번만 읽습니다.
+
+### 전체 파일시스템 — 명시적 선택
+
+기존 broad scan을 별도 mode로 유지합니다. 검색 루트는 다음과 같습니다.
 
 - `$HOME`
 - `/Applications`
@@ -43,16 +67,7 @@ npm start
 - `/usr/local`
 - `/opt/homebrew`
 
-제외 경로:
-
-- `.git`
-- `Library/Caches`
-- `.npm/_cacache`
-- `.bun/install/cache`
-- `.cache`
-- `.Trash`
-
-존재하지 않는 기본 루트는 자동으로 건너뜁니다. macOS 보호 영역의 권한 오류는 전체 검색을 중단하지 않고 화면에 개수만 표시합니다.
+`.git`, `Library/Caches`, `.npm/_cacache`, `.bun/install/cache`, `.cache`, `.Trash`는 제외합니다. 존재하지 않는 root는 건너뛰고 macOS 보호 영역의 권한 오류는 전체 검색을 중단하지 않고 집계합니다. 공식 mode와 전체 mode의 snapshot·재검색 cache는 서로 섞이지 않습니다.
 
 ## 읽기 전용 경계
 
