@@ -87,7 +87,7 @@ export function createAgentSkillProjection(records: SkillRecord[]): AgentSkillPr
 export function createProjectSkillProjection(records: SkillRecord[]): ProjectSkillProjection;
 ```
 
-- [ ] **Step 1: Write failing projection tests**
+- [x] **Step 1: Write failing projection tests**
 
 Create a `skill()` fixture with stable `device/inode`, then cover these exact cases:
 
@@ -166,7 +166,7 @@ it("uses full-mode fallback without mixing project records into agents", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run:
 
@@ -176,7 +176,7 @@ npm test -- src/lib/dashboard/skill-views.test.ts
 
 Expected: FAIL because `./skill-views` does not exist.
 
-- [ ] **Step 3: Implement projection types and path inference**
+- [x] **Step 3: Implement projection types and path inference**
 
 Create `skill-views.ts` with:
 
@@ -202,7 +202,7 @@ export function inferProjectDirectory(skillsRoot: string, configRoot?: string): 
 
 Use `${record.device}:${record.inode}` as the physical key. Build map keys as `${owner.id}\0${physicalKey}` for Agent entries and `${directory}\0${physicalKey}` for Project entries. Deduplicate aliases by `${owner.id}\0${path}`, owners by `owner.id`, and sort with `localeCompare(..., "ko", { numeric: true, sensitivity: "base" })` plus raw-string tie breakers. Use a stable fallback owner ID derived from `record.agent`; map `Shared agent skills` and `공유 디렉터리` to the shared owner.
 
-- [ ] **Step 4: Run focused tests and diagnostics**
+- [x] **Step 4: Run focused tests and diagnostics**
 
 Run:
 
@@ -213,7 +213,7 @@ npm run check
 
 Expected: projection tests PASS and Astro diagnostics report 0 errors/warnings/hints.
 
-- [ ] **Step 5: Commit Task 1**
+- [x] **Step 5: Commit Task 1**
 
 ```bash
 git add src/lib/dashboard/skill-views.ts src/lib/dashboard/skill-views.test.ts
@@ -233,7 +233,7 @@ git commit -m "feat(view): 에이전트·프로젝트 Skill 집계 추가"
 - Consumes `AgentSkillProjection`, `ProjectSkillProjection`, `AgentSkillGroup`, `ProjectSkillGroup` from Task 1.
 - Both panels receive `onSelect: (skill: SkillRecord, trigger: HTMLButtonElement) => void` and do not own dialog state.
 
-- [ ] **Step 1: Write failing dashboard tab tests**
+- [x] **Step 1: Write failing dashboard tab tests**
 
 Add a fixture containing:
 
@@ -245,7 +245,7 @@ Assert:
 
 ```ts
 expect(await screen.findByRole("button", { name: "에이전트 1" })).toBeInTheDocument();
-expect(screen.getByRole("button", { name: "프로젝트 1" })).toBeInTheDocument();
+expect(screen.getByRole("button", { name: "프로젝트 2" })).toBeInTheDocument();
 
 fireEvent.click(screen.getByRole("button", { name: "에이전트 1" }));
 expect(screen.getByRole("heading", { name: "Claude Code" })).toBeInTheDocument();
@@ -263,7 +263,7 @@ expect(within(project).getByText("Cursor")).toBeInTheDocument();
 
 Click the project Skill detail trigger, close with Escape, and assert the trigger regains focus.
 
-- [ ] **Step 2: Run dashboard test and verify RED**
+- [x] **Step 2: Run dashboard test and verify RED**
 
 Run:
 
@@ -273,7 +273,7 @@ npm test -- src/components/dashboard/SkillDashboard.test.tsx
 
 Expected: FAIL because the `에이전트` and `프로젝트` tabs do not exist.
 
-- [ ] **Step 3: Implement the Agent panel**
+- [x] **Step 3: Implement the Agent panel**
 
 Create `AgentSkillsPanel.tsx` with this structure:
 
@@ -324,7 +324,7 @@ export function AgentSkillsPanel(props: Props) {
 }
 ```
 
-- [ ] **Step 4: Implement the Project panel**
+- [x] **Step 4: Implement the Project panel**
 
 Create `ProjectSkillsPanel.tsx` with project `<article>` elements:
 
@@ -366,7 +366,7 @@ export function ProjectSkillsPanel(props: Props) {
 }
 ```
 
-- [ ] **Step 5: Wire tabs, memos, counts, and selection**
+- [x] **Step 5: Wire tabs, memos, counts, and selection**
 
 In `SkillDashboard.tsx`:
 
@@ -400,7 +400,7 @@ Add these `Match` branches and pass the existing detail callback:
 </Match>
 ```
 
-- [ ] **Step 6: Add responsive styling**
+- [x] **Step 6: Add responsive styling**
 
 Add the following style families, preserving the existing horizontally scrollable mobile tab strip:
 
@@ -427,7 +427,7 @@ Add the following style families, preserving the existing horizontally scrollabl
 }
 ```
 
-- [ ] **Step 7: Run focused and full UI tests**
+- [x] **Step 7: Run focused and full UI tests**
 
 Run:
 
@@ -439,7 +439,7 @@ npm run check
 
 Expected: all tests PASS and diagnostics remain zero.
 
-- [ ] **Step 8: Commit Task 2**
+- [x] **Step 8: Commit Task 2**
 
 ```bash
 git add src/components/dashboard/AgentSkillsPanel.tsx \
@@ -456,7 +456,7 @@ git commit -m "feat(ui): 에이전트·프로젝트 Skill 탭 추가"
 - Modify: `README.md`
 - Modify: `docs/superpowers/plans/2026-07-18-agent-project-skill-views.md`
 
-- [ ] **Step 1: Document both projections**
+- [x] **Step 1: Document both projections**
 
 Add these README statements:
 
@@ -467,7 +467,7 @@ Add these README statements:
 에이전트 탭은 project sighting을 집계에서 제외하되 같은 파일의 전역·관리자 sighting은 유지합니다. 프로젝트 탭은 agent namespace 앞의 project dir로 대분류하고 같은 물리 Skill의 여러 agent alias를 한 entry에 표시합니다. 전체 파일시스템 mode에서 공식 sighting이 없는 항목만 기존 `project/source-local` 분류와 경로 규칙으로 보완합니다.
 ```
 
-- [ ] **Step 2: Run real snapshot invariant smoke**
+- [x] **Step 2: Run real snapshot invariant smoke**
 
 Use the production API response and a small Node script importing the built projection module or a Vitest fixture to assert:
 
@@ -483,7 +483,7 @@ new Set(projectProjection.groups.flatMap((group) =>
 )).size === projectProjection.skillCount;
 ```
 
-- [ ] **Step 3: Run browser QA**
+- [x] **Step 3: Run browser QA**
 
 At desktop and 390px:
 

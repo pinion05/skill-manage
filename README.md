@@ -32,10 +32,14 @@ npm start
 - 안전하게 렌더링한 Markdown 상세 보기
 - `.agents/skills`는 공유로, vendor 경로는 해당 agent 하나에만 귀속하는 공식 소스 원장
 - 같은 물리 파일의 공식 alias는 한 번만 표시하고 모든 source sighting 보존
+- 프로젝트 경로와 `skills.md` 문서를 제외해 공유·에이전트별 `SKILL.md`만 보여주는 에이전트 탭
+- project dir별로 물리 Skill을 한 번만 표시하고 연결 에이전트·alias를 합치는 프로젝트 탭
 - 정상·깨진 심볼릭 링크 구분
 - 권한 오류 집계
 - 현재 선택한 검색 mode만 갱신하는 수동 재검색
 - 데스크톱·모바일 반응형 화면
+
+에이전트 탭은 project sighting을 집계에서 제외하되 같은 파일의 전역·관리자 sighting은 유지합니다. 프로젝트 탭은 agent namespace 앞의 project dir로 대분류하고 같은 물리 Skill의 여러 agent alias를 한 entry에 표시합니다. 전체 파일시스템 mode에서 공식 sighting이 없는 항목만 기존 `project/source-local` 분류와 경로 규칙으로 보완합니다.
 
 ## 검색 범위
 
