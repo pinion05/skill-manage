@@ -10,6 +10,41 @@ export type SkillKind =
 
 export type SkillRecordType = "skill" | "document";
 export type LinkStatus = "healthy" | "broken";
+export type ScanMode = "official" | "full";
+export type OfficialSourceScope = "user" | "project" | "admin";
+export type OfficialSourceKind = "native" | "shared" | "compatibility";
+
+export interface SkillSourceSighting {
+  rootPath: string;
+  path: string;
+  scope: OfficialSourceScope;
+  kinds: OfficialSourceKind[];
+  agents: string[];
+}
+
+export interface OfficialAgentSource {
+  id: string;
+  name: string;
+  documentationUrl: string;
+  globalPaths: string[];
+  projectPaths: string[];
+}
+
+export interface OfficialSourceRoot {
+  id: string;
+  path: string;
+  canonicalPath?: string;
+  scope: OfficialSourceScope;
+  kinds: OfficialSourceKind[];
+  agents: string[];
+  exists: boolean;
+  skillCount: number;
+}
+
+export interface OfficialSourceSummary {
+  agents: OfficialAgentSource[];
+  roots: OfficialSourceRoot[];
+}
 
 export interface SkillRecord {
   id: string;
@@ -26,6 +61,7 @@ export interface SkillRecord {
   size: number;
   device: number;
   inode: number;
+  sourceSightings: SkillSourceSighting[];
 }
 
 export interface SkillLink {
@@ -65,6 +101,8 @@ export interface InventoryStats {
 }
 
 export interface InventorySnapshot {
+  scanMode: ScanMode;
+  officialSources: OfficialSourceSummary;
   generatedAt: string;
   durationMs: number;
   searchRoots: string[];

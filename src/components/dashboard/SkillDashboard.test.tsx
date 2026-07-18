@@ -7,6 +7,8 @@ import { SkillDashboard } from "./SkillDashboard";
 
 function inventory(name = "alpha"): InventorySnapshot {
   return {
+    scanMode: "official",
+    officialSources: { agents: [], roots: [] },
     generatedAt: "2026-07-18T01:00:00.000Z",
     durationMs: 42,
     searchRoots: ["/Users/me"],
@@ -26,6 +28,7 @@ function inventory(name = "alpha"): InventorySnapshot {
         size: 128,
         device: 1,
         inode: 2,
+        sourceSightings: [],
       },
     ],
     links: [

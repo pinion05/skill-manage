@@ -33,6 +33,7 @@ async function fixtureRecord(contents: string, fileName = "SKILL.md"): Promise<S
     size: Buffer.byteLength(contents),
     device: fileStat.dev,
     inode: fileStat.ino,
+    sourceSightings: [],
   };
 }
 

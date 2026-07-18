@@ -18,8 +18,11 @@ function snapshot(id = "skill-a"): InventorySnapshot {
     size: 10,
     device: 1,
     inode: 2,
+    sourceSightings: [],
   };
   return {
+    scanMode: "official",
+    officialSources: { agents: [], roots: [] },
     generatedAt: new Date(0).toISOString(),
     durationMs: 1,
     searchRoots: ["/tmp"],

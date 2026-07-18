@@ -63,7 +63,10 @@ describe("scanInventory", () => {
     const root = await makeFixture();
     const snapshot = await scanInventory({ roots: [root], home: root });
 
+    expect(snapshot.scanMode).toBe("full");
+    expect(snapshot.officialSources).toEqual({ agents: [], roots: [] });
     expect(snapshot.skills).toHaveLength(3);
+    expect(snapshot.skills.every((skill) => skill.sourceSightings.length === 0)).toBe(true);
     expect(snapshot.stats.skillDefinitions).toBe(2);
     expect(snapshot.stats.documents).toBe(1);
     expect(snapshot.stats.matchedFiles).toBe(3);

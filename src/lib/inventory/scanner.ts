@@ -248,6 +248,7 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
           size: fileStat.size,
           device: fileStat.dev,
           inode: fileStat.ino,
+          sourceSightings: [],
         });
       } finally {
         await handle.close();
@@ -365,6 +366,8 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
   const documents = skills.length - skillDefinitions;
 
   return {
+    scanMode: "full",
+    officialSources: { agents: [], roots: [] },
     generatedAt: new Date().toISOString(),
     durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
     searchRoots,
