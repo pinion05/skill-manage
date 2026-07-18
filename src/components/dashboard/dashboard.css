@@ -14,6 +14,7 @@
 }
 
 .app-shell { min-height: 100vh; padding: 0 clamp(1rem, 3vw, 3.5rem); }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
 .scan-rail { position: fixed; inset: 0 0 auto; z-index: 60; height: 3px; overflow: hidden; pointer-events: none; }
 .scan-rail i { display: block; width: 45%; height: 100%; background: var(--accent); opacity: 0; }
 .scan-rail.active i { opacity: 1; animation: scan-pass 0.9s ease-in-out infinite; }
@@ -116,6 +117,7 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
 .skill-source { display: grid; gap: 0.35rem; }
 .skill-source strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.76rem; }
 .skill-source span { color: var(--muted); font: 0.64rem/1.2 var(--mono); }
+.skill-config-root { display: block; overflow: hidden; color: var(--muted); font: 0.56rem/1.2 var(--mono); text-overflow: ellipsis; white-space: nowrap; }
 .skill-date { color: var(--muted); font: 0.68rem/1.2 var(--mono); }
 .empty-state { min-height: 28rem; display: grid; place-content: center; justify-items: center; gap: 0.5rem; text-align: center; }
 .empty-state > span { color: var(--accent); font: 300 4rem/1 var(--display); }
@@ -250,9 +252,9 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
   td.skill-description, td.skill-source, td.skill-date { grid-template-columns: 5.2rem minmax(0, 1fr); gap: 0.7rem; align-items: start; }
   td.skill-description::before, td.skill-source::before, td.skill-date::before { color: var(--muted); font: 700 0.58rem/1.4 var(--mono); letter-spacing: 0.08em; }
   td.skill-description::before { content: "설명"; }
-  td.skill-source::before { content: "설정 / 성격"; grid-row: 1 / span 2; }
+  td.skill-source::before { content: "설정 / 성격"; grid-row: 1 / span 3; }
   td.skill-date::before { content: "수정"; }
-  .skill-source strong, .skill-source span { grid-column: 2; white-space: normal; }
+  .skill-source strong, .skill-source span, .skill-source code { grid-column: 2; white-space: normal; overflow-wrap: anywhere; }
   .link-health-heading { align-items: stretch; flex-direction: column; }
   .segmented-control { align-self: start; }
   .root-audit-list { grid-template-columns: 1fr; }

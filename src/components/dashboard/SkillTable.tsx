@@ -66,6 +66,7 @@ export function SkillTable(props: Props) {
                     <td class="skill-source" headers="skill-column-source">
                       <strong>{skill.agent}</strong>
                       <span>{kindLabel(skill.kind)}</span>
+                      <code class="skill-config-root" title={skill.configRoot}>{skill.configRoot}</code>
                     </td>
                     <td class="skill-date" headers="skill-column-modified">
                       <time datetime={skill.modifiedAt}>{dateFormatter.format(new Date(skill.modifiedAt))}</time>

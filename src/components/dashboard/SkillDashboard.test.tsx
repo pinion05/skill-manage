@@ -98,6 +98,7 @@ describe("SkillDashboard", () => {
     expect(document.querySelector("td.skill-description")).toHaveAttribute("headers", "skill-column-description");
     expect(document.querySelector("td.skill-source")).toHaveAttribute("headers", "skill-column-source");
     expect(document.querySelector("td.skill-date")).toHaveAttribute("headers", "skill-column-modified");
+    expect(screen.getByText("/Users/me/.codex", { selector: "code.skill-config-root" })).toBeInTheDocument();
 
     fireEvent.input(screen.getByRole("searchbox"), { target: { value: "없는 스킬" } });
     expect(screen.getByText("조건에 맞는 skill이 없습니다.")).toBeInTheDocument();
@@ -165,5 +166,9 @@ describe("SkillDashboard", () => {
       expect(screen.getByRole("button", { name: /alpha-refreshed 상세 보기/ })).toBeInTheDocument();
     });
     expect(fetchMock).toHaveBeenCalledWith("/api/inventory/refresh", { method: "POST" });
+    expect(screen.getByText("파일시스템 재검색이 완료되었습니다.")).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
   });
 });

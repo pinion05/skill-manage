@@ -45,6 +45,7 @@ export function SkillDashboard() {
   const [view, setView] = createSignal<"skills" | "links">("skills");
   const [selected, setSelected] = createSignal<SkillRecord>();
   const [refreshing, setRefreshing] = createSignal(false);
+  const [refreshStatus, setRefreshStatus] = createSignal("");
   const [actionError, setActionError] = createSignal("");
   let detailTrigger: HTMLElement | undefined;
 
@@ -72,13 +73,16 @@ export function SkillDashboard() {
 
   const refresh = async () => {
     setRefreshing(true);
+    setRefreshStatus("파일시스템 재검색을 시작했습니다.");
     setActionError("");
     try {
       const next = await requestInventory("/api/inventory/refresh", { method: "POST" });
       mutate(next);
       const currentSelection = selected();
       if (currentSelection) setSelected(next.skills.find((skill) => skill.id === currentSelection.id));
+      setRefreshStatus("파일시스템 재검색이 완료되었습니다.");
     } catch (error) {
+      setRefreshStatus("파일시스템 재검색에 실패했습니다.");
       setActionError(error instanceof Error ? error.message : "재검색에 실패했습니다.");
     } finally {
       setRefreshing(false);
@@ -87,6 +91,7 @@ export function SkillDashboard() {
 
   return (
     <main class="app-shell">
+      <p class="sr-only" aria-live="polite" aria-atomic="true">{refreshStatus()}</p>
       <div class="scan-rail" classList={{ active: refreshing() }} aria-hidden="true"><i /></div>
       <header class="app-header">
         <div class="brand-block">
