@@ -32,6 +32,7 @@ export interface OfficialDiscoveryOptions {
 
 export interface OfficialScanOptions extends Omit<OfficialDiscoveryOptions, "maxDirectories"> {
   discoveryMaxDirectories?: number;
+  maxScanDirectories?: number;
   maxLinkTargetDirectories?: number;
 }
 
@@ -469,6 +470,7 @@ export async function scanOfficialInventory(
     concurrency: options.concurrency ?? DEFAULT_DISCOVERY_CONCURRENCY,
     maxErrorSamples: options.maxErrorSamples ?? DEFAULT_MAX_ERROR_SAMPLES,
     maxLinkTargetDirectories: options.maxLinkTargetDirectories ?? 10_000,
+    maxDirectories: options.maxScanDirectories ?? 100_000,
     followDirectoryLinks: true,
   });
   const skills = await dedupeOfficialSkills(base.skills, base.links, discovery.roots);

@@ -19,6 +19,7 @@ export interface ScanOptions {
   concurrency: number;
   maxErrorSamples: number;
   maxLinkTargetDirectories: number;
+  maxDirectories: number;
   followDirectoryLinks: boolean;
 }
 
@@ -26,6 +27,7 @@ const SKILL_FILE = "skill.md";
 const SKILLS_DOCUMENT = "skills.md";
 const MAX_FRONTMATTER_BYTES = 1024 * 1024;
 const MAX_LINK_TARGET_DIRECTORIES = 10_000;
+const MAX_SCAN_DIRECTORIES = 500_000;
 
 export function defaultScanOptions(home = os.homedir()): ScanOptions {
   return {
@@ -34,6 +36,7 @@ export function defaultScanOptions(home = os.homedir()): ScanOptions {
     concurrency: 12,
     maxErrorSamples: 100,
     maxLinkTargetDirectories: MAX_LINK_TARGET_DIRECTORIES,
+    maxDirectories: MAX_SCAN_DIRECTORIES,
     followDirectoryLinks: false,
   };
 }
@@ -76,6 +79,7 @@ const SAFE_ERROR_MESSAGES: Record<string, string> = {
   FILE_TOO_LARGE: "1 MiB를 초과해 frontmatter 읽기를 생략했습니다.",
   FRONTMATTER_PARSE: "frontmatter를 해석하지 못해 디렉터리 이름을 사용했습니다.",
   LINK_SCAN_LIMIT: "링크 대상 검색 한도에 도달했습니다.",
+  SCAN_LIMIT: "파일시스템 검색 디렉터리 한도에 도달했습니다.",
   NOT_REGULAR_FILE: "검색 중 skill 경로가 일반 파일이 아닌 항목으로 바뀌었습니다.",
 };
 
@@ -91,6 +95,18 @@ function errorDetails(error: unknown, errorPath: string): ScanError {
     code,
     message: SAFE_ERROR_MESSAGES[code] ?? "파일시스템 항목을 읽지 못했습니다.",
   };
+}
+
+async function directoryHasDirectSkill(directoryPath: string): Promise<boolean> {
+  try {
+    const directory = await opendir(directoryPath);
+    for await (const entry of directory) {
+      if (entry.isFile() && entry.name.toLowerCase() === SKILL_FILE) return true;
+    }
+  } catch {
+    // Link health inspection records relevant filesystem failures separately.
+  }
+  return false;
 }
 
 async function targetContainsSkill(
@@ -301,6 +317,8 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
 
   const queue = [...searchRoots];
   const visitedDirectories = new Set<string>();
+  let discoveredDirectories = queue.length;
+  let scanLimitRecorded = false;
   let pending = queue.length;
   const waiters: Array<() => void> = [];
   const wake = (): void => {
@@ -311,6 +329,14 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
     while (waiters.length) wake();
   };
   const enqueue = (directory: string): void => {
+    if (discoveredDirectories >= options.maxDirectories) {
+      if (!scanLimitRecorded) {
+        scanLimitRecorded = true;
+        recordIssue("SCAN_LIMIT", directory);
+      }
+      return;
+    }
+    discoveredDirectories += 1;
     queue.push(directory);
     pending += 1;
     wake();
@@ -340,7 +366,9 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
             if (options.followDirectoryLinks) {
               try {
                 const targetStat = await stat(entryPath);
-                if (targetStat.isDirectory()) enqueue(entryPath);
+                if (targetStat.isDirectory() && (await directoryHasDirectSkill(entryPath))) {
+                  enqueue(entryPath);
+                }
               } catch {
                 // inspectLink already records relevant link state without exposing raw errors.
               }

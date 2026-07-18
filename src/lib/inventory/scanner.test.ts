@@ -128,6 +128,32 @@ describe("scanInventory", () => {
     expect(followedSnapshot.links).toHaveLength(2);
   });
 
+  it("does not expand a linked collection that lacks a direct SKILL.md", async () => {
+    const root = await makeFixture();
+    const linkRoot = path.join(root, "collection-links", "skills");
+    const collection = path.join(root, "large-collection");
+    await Promise.all([
+      mkdir(linkRoot, { recursive: true }),
+      mkdir(path.join(collection, "nested-skill"), { recursive: true }),
+    ]);
+    await writeFile(
+      path.join(collection, "nested-skill", "SKILL.md"),
+      "---\nname: nested-through-collection\n---\n",
+    );
+    await symlink(collection, path.join(linkRoot, "collection"));
+
+    const snapshot = await scanInventory({
+      roots: [linkRoot],
+      home: root,
+      followDirectoryLinks: true,
+    });
+
+    expect(snapshot.skills).toHaveLength(0);
+    expect(snapshot.links).toContainEqual(
+      expect.objectContaining({ status: "healthy", containsSkill: true }),
+    );
+  });
+
   it("bounds frontmatter reads and sanitizes parser errors", async () => {
     const root = await makeFixture();
     const hugeDirectory = path.join(root, ".codex", "skills", "huge");
@@ -168,6 +194,30 @@ describe("scanInventory", () => {
       status: "healthy",
       containsSkill: true,
     });
+  });
+
+  it("bounds the main traversal queue before expanding a broad root", async () => {
+    const root = await makeFixture();
+    const broadRoot = path.join(root, "broad-root");
+    await mkdir(broadRoot, { recursive: true });
+    await Promise.all(
+      Array.from({ length: 8 }, async (_, index) => {
+        const skillDirectory = path.join(broadRoot, `child-${index}`);
+        await mkdir(skillDirectory, { recursive: true });
+        await writeFile(path.join(skillDirectory, "SKILL.md"), `---\nname: child-${index}\n---\n`);
+      }),
+    );
+
+    const snapshot = await scanInventory({
+      roots: [broadRoot],
+      home: root,
+      maxDirectories: 3,
+    });
+
+    expect(snapshot.errors.samples).toContainEqual(
+      expect.objectContaining({ code: "SCAN_LIMIT" }),
+    );
+    expect(snapshot.skills.length).toBeLessThan(8);
   });
 
   it("bounds wide link-target queues when directories are discovered", async () => {

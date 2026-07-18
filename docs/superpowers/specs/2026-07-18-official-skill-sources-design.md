@@ -114,7 +114,7 @@ Hermes profile과 Roo mode처럼 이름이 동적인 공식 경로는 제한된 
 - `.codex/.tmp`, `.codex/vendor_imports`, `.omx/backups`, ZCode plugin cache/marketplace, VS Code extension cache
 - Claude `projects`, Codex/Pi `sessions`, Hermes session/state 영역, Qwen `tmp`, OpenCode application data
 
-순회에는 제한된 동시성, 최대 directory budget, symlink 비추적, 접근 오류 샘플 상한을 둔다. 공식 root 자체가 symlink이면 root 해석 단계에서만 target을 검증한다.
+discovery와 실제 root scan 모두 제한된 동시성, 최대 directory budget, 접근 오류 샘플 상한을 둔다. discovery는 symlink를 추적하지 않고, 공식 root 자체가 symlink이면 root 해석 단계에서만 target을 검증한다. root 내부의 symlink는 target 최상위에 일반 `SKILL.md`가 있는 실제 skill package일 때만 opt-in으로 추적하므로, 홈이나 대형 collection을 가리키는 링크가 기본 검색 범위를 다시 넓히지 않는다.
 
 ## 물리 identity와 alias
 

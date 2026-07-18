@@ -50,38 +50,36 @@ describe("resolveOfficialRegistry", () => {
     const registry = resolveOfficialRegistry("/Users/me", {});
     const ids = registry.agents.map(({ id }) => id);
 
-    expect(ids).toEqual(
-      expect.arrayContaining([
-        "opencode",
-        "claude-code",
-        "codex",
-        "sakana-fugu",
-        "hermes",
-        "gemini-cli",
-        "antigravity",
-        "pi",
-        "qwen",
-        "cursor",
-        "roo",
-        "kilo",
-        "zed",
-        "kiro",
-        "cline",
-        "openclaw",
-        "github-copilot-cli",
-        "amp",
-        "factory-droid",
-        "kimi",
-        "mux",
-        "crush",
-        "goose",
-        "warp",
-        "grok-build",
-        "jcode",
-        "mimo-code",
-        "zcode",
-      ]),
-    );
+    expect(ids).toEqual([
+      "opencode",
+      "claude-code",
+      "codex",
+      "sakana-fugu",
+      "hermes",
+      "gemini-cli",
+      "antigravity",
+      "pi",
+      "qwen",
+      "cursor",
+      "roo",
+      "kilo",
+      "zed",
+      "kiro",
+      "cline",
+      "openclaw",
+      "github-copilot-cli",
+      "amp",
+      "factory-droid",
+      "kimi",
+      "mux",
+      "crush",
+      "goose",
+      "warp",
+      "grok-build",
+      "jcode",
+      "mimo-code",
+      "zcode",
+    ]);
     expect(ids).not.toEqual(
       expect.arrayContaining([
         "codebuddy",
@@ -122,6 +120,16 @@ describe("resolveOfficialRegistry", () => {
       workspaceMarker: false,
     });
     expect(qwenShared?.agents).not.toContain("Qwen Code");
+  });
+
+  it("does not classify project-like suffixes outside the selected home", () => {
+    const registry = resolveOfficialRegistry("/Users/me", {});
+
+    expect(
+      matchOfficialRoot("/tmp/external/.claude/skills", registry, {
+        workspaceMarker: false,
+      }),
+    ).toBeUndefined();
   });
 
   it("matches dynamic documented roots without guessing which plain skills folder is an OpenClaw workspace", () => {

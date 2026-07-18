@@ -159,7 +159,7 @@ Expected: FAIL because `official-discovery.ts` does not exist.
 
 - [ ] **Step 3: Add opt-in symlink directory traversal to the base scanner**
 
-Add `followDirectoryLinks: boolean` defaulting to `false`. When enabled, only directory links whose lexical path is under a `skills` segment are enqueued. Before processing any directory, claim `(st_dev, st_ino)` in a visited set so cycles and multiple aliases cannot create unbounded traversal. Continue recording link health through the existing `inspectLink` path.
+Add `followDirectoryLinks: boolean` defaulting to `false`. When enabled, enqueue only directory links whose target top-level contains a regular `SKILL.md`; collection or broad-root links remain diagnostics and are not expanded. Before processing any directory, claim `(st_dev, st_ino)` in a visited set so cycles and multiple aliases cannot create unbounded traversal. Apply a separate main traversal directory budget and continue recording link health through the existing `inspectLink` path.
 
 - [ ] **Step 4: Verify scanner symlink behavior**
 

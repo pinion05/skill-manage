@@ -607,14 +607,16 @@ export function matchOfficialRoot(
   if (fixedMatches.length > 0) return mergeMatches(fixedMatches);
 
   const relative = path.relative(registry.home, normalizedRoot);
-  const relativeParts = normalizedParts(relative);
+  const insideHome =
+    relative === "" ||
+    (!relative.startsWith(`..${path.sep}`) && relative !== ".." && !path.isAbsolute(relative));
+  if (!insideHome) return undefined;
 
-  if (!relative.startsWith("..") && !path.isAbsolute(relative)) {
-    const dynamicGlobalMatches = registry.globalPatterns.filter(({ pattern }) =>
-      patternMatches(relativeParts, pattern, true),
-    );
-    if (dynamicGlobalMatches.length > 0) return mergeMatches(dynamicGlobalMatches);
-  }
+  const relativeParts = normalizedParts(relative);
+  const dynamicGlobalMatches = registry.globalPatterns.filter(({ pattern }) =>
+    patternMatches(relativeParts, pattern, true),
+  );
+  if (dynamicGlobalMatches.length > 0) return mergeMatches(dynamicGlobalMatches);
 
   const projectMatches = registry.projectPatterns.filter(
     ({ pattern, workspaceMarker }) =>
