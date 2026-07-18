@@ -24,6 +24,8 @@ export interface SkillRecord {
   kind: SkillKind;
   modifiedAt: string;
   size: number;
+  device: number;
+  inode: number;
 }
 
 export interface SkillLink {

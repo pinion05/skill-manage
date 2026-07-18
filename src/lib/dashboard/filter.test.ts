@@ -16,6 +16,8 @@ function skill(overrides: Partial<SkillRecord> = {}): SkillRecord {
     kind: "user/global-config",
     modifiedAt: "2026-01-01T00:00:00.000Z",
     size: 100,
+    device: 1,
+    inode: 2,
     ...overrides,
   };
 }

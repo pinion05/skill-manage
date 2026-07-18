@@ -1,4 +1,4 @@
-import { mkdir, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -10,9 +10,11 @@ const fixtures: string[] = [];
 async function fixtureRecord(contents: string, fileName = "SKILL.md"): Promise<SkillRecord> {
   const root = path.join(os.tmpdir(), `skill-content-${crypto.randomUUID()}`);
   fixtures.push(root);
-  await mkdir(root, { recursive: true });
-  const filePath = path.join(root, fileName);
+  const skillDirectory = path.join(root, "entry");
+  await mkdir(skillDirectory, { recursive: true });
+  const filePath = path.join(skillDirectory, fileName);
   await writeFile(filePath, contents);
+  const fileStat = await stat(filePath);
   return {
     id: "content-id",
     name: "content",
@@ -26,6 +28,8 @@ async function fixtureRecord(contents: string, fileName = "SKILL.md"): Promise<S
     kind: "other",
     modifiedAt: new Date(0).toISOString(),
     size: Buffer.byteLength(contents),
+    device: fileStat.dev,
+    inode: fileStat.ino,
   };
 }
 
@@ -81,6 +85,19 @@ describe("readSkillContent", () => {
     await writeFile(secretPath, "TOP SECRET");
     await rm(record.path);
     await symlink(secretPath, record.path);
+
+    await expect(readSkillContent(record)).rejects.toBeInstanceOf(InvalidSkillFileError);
+  });
+
+  it("rejects a cached path whose parent directory becomes a symlink", async () => {
+    const record = await fixtureRecord("# Original\n");
+    const originalDirectory = path.dirname(record.path);
+    const archivedDirectory = `${originalDirectory}-archived`;
+    const replacementDirectory = `${originalDirectory}-replacement`;
+    await rename(originalDirectory, archivedDirectory);
+    await mkdir(replacementDirectory, { recursive: true });
+    await writeFile(path.join(replacementDirectory, "SKILL.md"), "# DIFFERENT SECRET\n");
+    await symlink(replacementDirectory, originalDirectory);
 
     await expect(readSkillContent(record)).rejects.toBeInstanceOf(InvalidSkillFileError);
   });

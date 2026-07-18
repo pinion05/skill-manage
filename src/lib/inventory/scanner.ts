@@ -18,6 +18,7 @@ export interface ScanOptions {
   home: string;
   concurrency: number;
   maxErrorSamples: number;
+  maxLinkTargetDirectories: number;
 }
 
 const SKILL_FILE = "skill.md";
@@ -31,6 +32,7 @@ export function defaultScanOptions(home = os.homedir()): ScanOptions {
     home,
     concurrency: 12,
     maxErrorSamples: 100,
+    maxLinkTargetDirectories: MAX_LINK_TARGET_DIRECTORIES,
   };
 }
 
@@ -90,6 +92,7 @@ function errorDetails(error: unknown, errorPath: string): ScanError {
 
 async function targetContainsSkill(
   target: string,
+  maxDirectories: number,
   onError: (error: unknown, errorPath: string) => void,
 ): Promise<boolean> {
   try {
@@ -102,20 +105,20 @@ async function targetContainsSkill(
   }
 
   const queue = [target];
-  let inspected = 0;
+  let discovered = 1;
   while (queue.length > 0) {
     const directoryPath = queue.shift();
     if (!directoryPath) break;
-    inspected += 1;
-    if (inspected > MAX_LINK_TARGET_DIRECTORIES) {
-      onError(codedError("LINK_SCAN_LIMIT"), target);
-      return false;
-    }
     try {
       const directory = await opendir(directoryPath);
       for await (const entry of directory) {
         if (entry.isFile() && entry.name.toLowerCase() === SKILL_FILE) return true;
         if (entry.isDirectory() && !shouldExclude(directoryPath, entry.name)) {
+          if (discovered >= maxDirectories) {
+            onError(codedError("LINK_SCAN_LIMIT"), target);
+            return false;
+          }
+          discovered += 1;
           queue.push(path.join(directoryPath, entry.name));
         }
       }
@@ -235,6 +238,8 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
           kind: classifyPath(filePath, options.home),
           modifiedAt: fileStat.mtime.toISOString(),
           size: fileStat.size,
+          device: fileStat.dev,
+          inode: fileStat.ino,
         });
       } finally {
         await handle.close();
@@ -273,7 +278,10 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
         configRoot,
         agent: inferAgentLabel(configRoot, options.home),
         status,
-        containsSkill: status === "healthy" ? await targetContainsSkill(target, onTargetError) : false,
+        containsSkill:
+          status === "healthy"
+            ? await targetContainsSkill(target, options.maxLinkTargetDirectories, onTargetError)
+            : false,
       });
     } catch (error) {
       recordError(error, linkPath);

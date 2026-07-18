@@ -77,6 +77,8 @@ describe("scanInventory", () => {
       kind: "user/global-config",
     });
     expect(alpha?.id).toMatch(/^[a-f0-9]{16}$/);
+    expect(alpha?.device).toEqual(expect.any(Number));
+    expect(alpha?.inode).toEqual(expect.any(Number));
 
     const fallback = snapshot.skills.find((skill) => skill.name === "no-frontmatter");
     expect(fallback?.description).toBe("");
@@ -142,6 +144,28 @@ describe("scanInventory", () => {
       status: "healthy",
       containsSkill: true,
     });
+  });
+
+  it("bounds wide link-target queues when directories are discovered", async () => {
+    const root = await makeFixture();
+    const wideTarget = path.join(root, "wide");
+    const wideLink = path.join(root, "links", "skills", "wide-link");
+    await mkdir(wideTarget, { recursive: true });
+    await Promise.all(
+      Array.from({ length: 8 }, (_, index) =>
+        mkdir(path.join(wideTarget, `child-${index}`), { recursive: true }),
+      ),
+    );
+    await symlink(wideTarget, wideLink);
+
+    const snapshot = await scanInventory({
+      roots: [root],
+      home: root,
+      maxLinkTargetDirectories: 3,
+    });
+
+    expect(snapshot.errors.samples.some((error) => error.code === "LINK_SCAN_LIMIT")).toBe(true);
+    expect(snapshot.links.find((link) => link.path === wideLink)?.containsSkill).toBe(false);
   });
 
   it("returns deterministic path ordering and root aggregates", async () => {

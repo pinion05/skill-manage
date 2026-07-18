@@ -16,6 +16,8 @@ function snapshot(id = "skill-a"): InventorySnapshot {
     kind: "other",
     modifiedAt: new Date(0).toISOString(),
     size: 10,
+    device: 1,
+    inode: 2,
   };
   return {
     generatedAt: new Date(0).toISOString(),

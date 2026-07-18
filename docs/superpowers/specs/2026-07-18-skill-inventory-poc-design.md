@@ -71,6 +71,7 @@ Astro는 Node 어댑터의 standalone SSR 모드로 실행한다. 파일시스�
 - 역추적한 에이전트 또는 설정 루트
 - 파일 성격: user/global config, app bundle, app runtime, plugin/cache/vendor, installed package/source dependency, project/source local, backup/temp/fixture, other
 - 수정 시각과 파일 크기
+- 스캔 시점의 filesystem device/inode identity
 
 ### 심볼릭 링크 데이터
 
@@ -166,7 +167,7 @@ Astro는 Node 어댑터의 standalone SSR 모드로 실행한다. 파일시스�
 - 개발·미리보기 명령은 기본 localhost 바인딩을 유지한다.
 - 모든 요청에서 `Host`를 loopback 주소로 제한하고, 변경 메서드는 동일 Origin만 허용한다.
 - API는 쓰기 작업을 제공하지 않는다.
-- 상세 파일 접근은 현재 인벤토리 ID allowlist로 제한하고 `O_NOFOLLOW` 파일 핸들 하나로 검사·읽기한다.
+- 상세 파일 접근은 현재 인벤토리 ID allowlist로 제한하고 `O_NOFOLLOW` 파일 핸들 하나로 검사·상한 읽기하며, 스캔 시점 device/inode identity와 일치해야 한다.
 - Markdown의 원시 HTML은 텍스트로 표시하고, 이미지는 네트워크 요청 없는 대체 문구로 바꾸며, 링크에는 안전한 속성을 적용한다.
 - 스캔 오류에 파일 내용이나 시스템 비밀을 포함하지 않는다.
 

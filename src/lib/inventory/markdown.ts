@@ -49,11 +49,19 @@ export async function readSkillContent(record: SkillRecord): Promise<SkillConten
     if (!fileStat.isFile()) {
       throw new InvalidSkillFileError("skill 경로가 일반 파일이 아닙니다.");
     }
+    if (fileStat.dev !== record.device || fileStat.ino !== record.inode) {
+      throw new InvalidSkillFileError("재검색 후 파일 경로의 identity가 바뀌었습니다.");
+    }
     if (fileStat.size > MAX_SKILL_FILE_BYTES) {
       throw new InvalidSkillFileError("skill 파일은 1 MiB보다 클 수 없습니다.");
     }
 
-    const markdown = await handle.readFile("utf8");
+    const buffer = Buffer.alloc(MAX_SKILL_FILE_BYTES + 1);
+    const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
+    if (bytesRead > MAX_SKILL_FILE_BYTES) {
+      throw new InvalidSkillFileError("skill 파일은 1 MiB보다 클 수 없습니다.");
+    }
+    const markdown = buffer.subarray(0, bytesRead).toString("utf8");
     let renderableMarkdown = markdown;
     try {
       renderableMarkdown = matter(markdown).content;
