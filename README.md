@@ -55,7 +55,7 @@ npm start
 
 ## 읽기 전용 경계
 
-이 PoC는 파일이나 링크를 생성·수정·삭제하지 않습니다. 모든 요청의 `Host`를 loopback 주소로 제한하고 POST는 동일 Origin만 허용합니다. 상세 API는 현재 인벤토리에서 발견한 ID만 허용하며, 심볼릭 링크를 따르지 않는 단일 파일 핸들로 상한 읽기하며 스캔 시점 device/inode identity도 검증합니다. 1MiB를 넘는 파일과 `SKILL.md`/`skills.md` 이외의 파일을 거부합니다. Markdown의 원시 HTML은 텍스트로, 이미지는 네트워크 요청 없는 대체 문구로 표시한 뒤 서버에서 정화합니다.
+이 PoC는 파일이나 링크를 생성·수정·삭제하지 않습니다. 모든 요청의 `Host`를 loopback 주소로 제한하고 POST는 동일 Origin만 허용합니다. 상세 API는 현재 인벤토리에서 발견한 ID만 허용하며, 심볼릭 링크를 따르지 않는 non-blocking 단일 파일 핸들로 상한 읽기하며 스캔 시점 device/inode identity도 검증합니다. 1MiB를 넘는 파일과 `SKILL.md`/`skills.md` 이외의 파일을 거부합니다. Markdown의 원시 HTML은 텍스트로, 이미지는 네트워크 요청 없는 대체 문구로 표시한 뒤 서버에서 정화합니다.
 
 ## 검증
 

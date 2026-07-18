@@ -35,7 +35,10 @@ export async function readSkillContent(record: SkillRecord): Promise<SkillConten
 
   let handle: Awaited<ReturnType<typeof open>>;
   try {
-    handle = await open(record.path, constants.O_RDONLY | constants.O_NOFOLLOW);
+    handle = await open(
+      record.path,
+      constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
+    );
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code;
     if (code === "ELOOP" || code === "EMLINK") {

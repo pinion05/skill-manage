@@ -1,4 +1,6 @@
+import { execFile } from "node:child_process";
 import { mkdir, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { promisify } from "node:util";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -6,6 +8,7 @@ import type { SkillRecord } from "./types";
 import { InvalidSkillFileError, readSkillContent } from "./markdown";
 
 const fixtures: string[] = [];
+const execFileAsync = promisify(execFile);
 
 async function fixtureRecord(contents: string, fileName = "SKILL.md"): Promise<SkillRecord> {
   const root = path.join(os.tmpdir(), `skill-content-${crypto.randomUUID()}`);
@@ -100,6 +103,23 @@ describe("readSkillContent", () => {
     await symlink(replacementDirectory, originalDirectory);
 
     await expect(readSkillContent(record)).rejects.toBeInstanceOf(InvalidSkillFileError);
+  });
+
+  it("rejects a FIFO replacement without waiting for a writer", async () => {
+    const record = await fixtureRecord("# Original\n");
+    await rm(record.path);
+    await execFileAsync("/usr/bin/mkfifo", [record.path]);
+
+    const startedAt = performance.now();
+    const delayedWriter = setTimeout(() => {
+      void writeFile(record.path, "unblock").catch(() => undefined);
+    }, 250);
+    try {
+      await expect(readSkillContent(record)).rejects.toBeInstanceOf(InvalidSkillFileError);
+    } finally {
+      clearTimeout(delayedWriter);
+    }
+    expect(performance.now() - startedAt).toBeLessThan(150);
   });
 
   it("rejects files outside the accepted skill filenames", async () => {

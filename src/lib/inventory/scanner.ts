@@ -74,6 +74,7 @@ const SAFE_ERROR_MESSAGES: Record<string, string> = {
   FILE_TOO_LARGE: "1 MiB를 초과해 frontmatter 읽기를 생략했습니다.",
   FRONTMATTER_PARSE: "frontmatter를 해석하지 못해 디렉터리 이름을 사용했습니다.",
   LINK_SCAN_LIMIT: "링크 대상 검색 한도에 도달했습니다.",
+  NOT_REGULAR_FILE: "검색 중 skill 경로가 일반 파일이 아닌 항목으로 바뀌었습니다.",
 };
 
 function codedError(code: string): NodeJS.ErrnoException {
@@ -200,9 +201,16 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
 
   const inspectSkill = async (filePath: string, fileName: string): Promise<void> => {
     try {
-      const handle = await open(filePath, constants.O_RDONLY | constants.O_NOFOLLOW);
+      const handle = await open(
+        filePath,
+        constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
+      );
       try {
         const fileStat = await handle.stat();
+        if (!fileStat.isFile()) {
+          recordIssue("NOT_REGULAR_FILE", filePath);
+          return;
+        }
         let name = path.basename(path.dirname(filePath));
         let description = "";
         if (fileStat.size > MAX_FRONTMATTER_BYTES) {
