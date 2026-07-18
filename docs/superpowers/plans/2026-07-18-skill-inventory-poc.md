@@ -535,7 +535,7 @@ Run:
 npm start
 curl --fail http://localhost:4321/
 curl --fail http://localhost:4321/api/inventory
-curl --fail -X POST http://localhost:4321/api/inventory/refresh
+curl --fail -X POST -H 'Origin: http://127.0.0.1:4321' http://127.0.0.1:4321/api/inventory/refresh
 ```
 
 Expected: 모두 2xx이며 inventory JSON에 `skills`, `links`, `stats`가 있다. 테스트 후 서버를 종료한다.
