@@ -5,6 +5,7 @@ import { kindLabel } from "./FilterBar";
 interface Props {
   skill: SkillRecord;
   duplicates: SkillRecord[];
+  returnFocus?: HTMLElement;
   onClose: () => void;
 }
 
@@ -23,12 +24,43 @@ const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
 export function SkillDetail(props: Props) {
   const [content] = createResource(() => props.skill.id, fetchContent);
   const [copyState, setCopyState] = createSignal("경로 복사");
+  let panel!: HTMLElement;
+  let heading!: HTMLHeadingElement;
 
   const onKeyDown = (event: KeyboardEvent) => {
-    if (event.key === "Escape") props.onClose();
+    if (event.key === "Escape") {
+      event.preventDefault();
+      props.onClose();
+      return;
+    }
+    if (event.key !== "Tab") return;
+
+    const focusable = [...panel.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )].filter((element) => element.getClientRects().length > 0 || import.meta.env.MODE === "test");
+    if (focusable.length === 0) {
+      event.preventDefault();
+      heading.focus();
+      return;
+    }
+    const first = focusable[0]!;
+    const last = focusable.at(-1)!;
+    if (event.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+      event.preventDefault();
+      first.focus();
+    }
   };
-  onMount(() => window.addEventListener("keydown", onKeyDown));
-  onCleanup(() => window.removeEventListener("keydown", onKeyDown));
+  onMount(() => {
+    window.addEventListener("keydown", onKeyDown);
+    queueMicrotask(() => heading.focus());
+  });
+  onCleanup(() => {
+    window.removeEventListener("keydown", onKeyDown);
+    props.returnFocus?.focus();
+  });
 
   const copyPath = async () => {
     try {
@@ -42,12 +74,12 @@ export function SkillDetail(props: Props) {
 
   return (
     <>
-      <button class="detail-backdrop" type="button" aria-label="상세 닫기" onClick={props.onClose} />
-      <aside class="detail-panel" role="dialog" aria-modal="true" aria-labelledby="skill-detail-title">
+      <button class="detail-backdrop" type="button" tabindex="-1" aria-hidden="true" onClick={props.onClose} />
+      <aside ref={panel} class="detail-panel" role="dialog" aria-modal="true" aria-labelledby="skill-detail-title">
         <header class="detail-header">
           <div>
             <p class="section-kicker">SKILL INSPECTOR</p>
-            <h2 id="skill-detail-title" tabindex="-1">{props.skill.name}</h2>
+            <h2 ref={heading} id="skill-detail-title" tabindex="-1">{props.skill.name}</h2>
             <p>{props.skill.description || "frontmatter 설명이 없습니다."}</p>
           </div>
           <button class="detail-close" type="button" aria-label="상세 닫기" onClick={props.onClose}>×</button>
@@ -59,6 +91,7 @@ export function SkillDetail(props: Props) {
           <div><dt>파일</dt><dd>{props.skill.recordType === "skill" ? "SKILL.md" : "skills.md 문서"}</dd></div>
           <div><dt>크기</dt><dd>{props.skill.size.toLocaleString("ko-KR")} B</dd></div>
           <div><dt>수정</dt><dd>{dateFormatter.format(new Date(props.skill.modifiedAt))}</dd></div>
+          <div class="detail-config-root"><dt>설정 루트</dt><dd><code>{props.skill.configRoot}</code></dd></div>
         </dl>
 
         <section class="detail-path" aria-label="파일 경로">

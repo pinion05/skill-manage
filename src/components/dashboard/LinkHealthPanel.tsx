@@ -1,12 +1,23 @@
 import { createMemo, createSignal, For, Show } from "solid-js";
-import type { SkillLink } from "../../lib/inventory/types";
+import type { InventoryRoot, SkillLink } from "../../lib/inventory/types";
 
 interface Props {
   links: SkillLink[];
+  roots: InventoryRoot[];
 }
 
 export function LinkHealthPanel(props: Props) {
   const [status, setStatus] = createSignal<"all" | "broken" | "healthy">("broken");
+  const linkRoots = createMemo(() =>
+    props.roots
+      .filter((root) => root.healthyLinks + root.brokenLinks > 0)
+      .toSorted(
+        (left, right) =>
+          right.brokenLinks - left.brokenLinks ||
+          right.healthyLinks - left.healthyLinks ||
+          left.configRoot.localeCompare(right.configRoot),
+      ),
+  );
   const visibleLinks = createMemo(() => {
     const filtered = status() === "all" ? props.links : props.links.filter((link) => link.status === status());
     return filtered.toSorted(
@@ -39,6 +50,24 @@ export function LinkHealthPanel(props: Props) {
           </For>
         </div>
       </div>
+
+      <section class="root-audit" aria-labelledby="root-audit-title">
+        <h3 id="root-audit-title">설정 루트별 링크</h3>
+        <div class="root-audit-list">
+          <For each={linkRoots()}>
+            {(root) => (
+              <article data-root-summary={root.configRoot}>
+                <div>
+                  <strong>{root.agent}</strong>
+                  <code class="root-path">{root.configRoot}</code>
+                </div>
+                <span class="healthy">정상 {root.healthyLinks.toLocaleString("ko-KR")}</span>
+                <span class="broken">깨짐 {root.brokenLinks.toLocaleString("ko-KR")}</span>
+              </article>
+            )}
+          </For>
+        </div>
+      </section>
 
       <Show
         when={visibleLinks().length > 0}

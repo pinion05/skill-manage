@@ -12,7 +12,7 @@ export function StatsStrip(props: Props) {
     { key: "roots", label: "설정 루트", value: props.stats.configRoots },
     { key: "healthy", label: "정상 링크", value: props.stats.healthyLinks },
     { key: "broken", label: "깨진 링크", value: props.stats.brokenLinks, danger: true },
-    { key: "errors", label: "접근 오류", value: props.stats.errorCount, warning: true },
+    { key: "errors", label: "검색 경고", value: props.stats.errorCount, warning: true },
   ];
 
   return (

@@ -90,7 +90,7 @@ export function FilterBar(props: Props) {
           <For each={props.roots}>
             {(root) => (
               <option value={root.configRoot}>
-                {root.agent} · {root.skillCount + root.documentCount}
+                {root.agent} · {root.configRoot} · {root.skillCount + root.documentCount}
               </option>
             )}
           </For>

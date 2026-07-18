@@ -8,6 +8,7 @@ import type {
 } from "../../lib/inventory/types";
 import { FilterBar } from "./FilterBar";
 import { LinkHealthPanel } from "./LinkHealthPanel";
+import { ScanWarnings } from "./ScanWarnings";
 import { SkillDetail } from "./SkillDetail";
 import { SkillTable } from "./SkillTable";
 import { StatsStrip } from "./StatsStrip";
@@ -45,6 +46,7 @@ export function SkillDashboard() {
   const [selected, setSelected] = createSignal<SkillRecord>();
   const [refreshing, setRefreshing] = createSignal(false);
   const [actionError, setActionError] = createSignal("");
+  let detailTrigger: HTMLElement | undefined;
 
   const filteredSkills = createMemo(() => {
     const current = snapshot();
@@ -117,6 +119,9 @@ export function SkillDashboard() {
             <span class="loading-rule" aria-hidden="true" />
             <p>파일시스템을 읽는 중</p>
             <small>SKILL.md와 심볼릭 링크를 조사합니다.</small>
+            <div class="loading-stats" aria-hidden="true">
+              <i /><i /><i /><i /><i /><i />
+            </div>
             <Show when={snapshot.error}><strong>{snapshot.error?.message}</strong></Show>
           </section>
         }
@@ -125,18 +130,20 @@ export function SkillDashboard() {
           <>
             <StatsStrip stats={current().stats} />
 
-            <Show when={actionError() || current().errors.count > 0}>
-              <div class="warning-line" role="status">
-                <strong>{actionError() || `접근하지 못한 경로 ${current().errors.count.toLocaleString("ko-KR")}개`}</strong>
-                <span>{actionError() ? "이전 인벤토리를 유지합니다." : "나머지 경로의 검색 결과는 정상적으로 표시됩니다."}</span>
+            <Show when={actionError()}>
+              <div class="warning-line" role="alert">
+                <strong>{actionError()}</strong>
+                <span>이전 인벤토리를 유지합니다.</span>
               </div>
             </Show>
+            <Show when={current().errors.count > 0}>
+              <ScanWarnings count={current().errors.count} samples={current().errors.samples} />
+            </Show>
 
-            <nav class="view-tabs" aria-label="인벤토리 보기" role="tablist">
+            <nav class="view-tabs" aria-label="인벤토리 보기">
               <button
                 type="button"
-                role="tab"
-                aria-selected={view() === "skills"}
+                aria-pressed={view() === "skills"}
                 classList={{ active: view() === "skills" }}
                 onClick={() => setView("skills")}
               >
@@ -144,8 +151,7 @@ export function SkillDashboard() {
               </button>
               <button
                 type="button"
-                role="tab"
-                aria-selected={view() === "links"}
+                aria-pressed={view() === "links"}
                 classList={{ active: view() === "links" }}
                 onClick={() => setView("links")}
               >
@@ -155,7 +161,7 @@ export function SkillDashboard() {
 
             <Show
               when={view() === "skills"}
-              fallback={<LinkHealthPanel links={current().links} />}
+              fallback={<LinkHealthPanel links={current().links} roots={current().roots} />}
             >
               <FilterBar
                 query={query()}
@@ -176,7 +182,10 @@ export function SkillDashboard() {
               <SkillTable
                 page={pageResult()}
                 selectedId={selected()?.id}
-                onSelect={setSelected}
+                onSelect={(skill, trigger) => {
+                  detailTrigger = trigger;
+                  setSelected(skill);
+                }}
                 onPage={setPage}
               />
             </Show>
@@ -191,7 +200,12 @@ export function SkillDashboard() {
 
       <Show when={selected()} keyed>
         {(skill) => (
-          <SkillDetail skill={skill} duplicates={selectedDuplicates()} onClose={() => setSelected()} />
+          <SkillDetail
+            skill={skill}
+            duplicates={selectedDuplicates()}
+            returnFocus={detailTrigger}
+            onClose={() => setSelected()}
+          />
         )}
       </Show>
     </main>

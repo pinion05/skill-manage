@@ -6,7 +6,7 @@ import { kindLabel } from "./FilterBar";
 interface Props {
   page: PageResult<SkillRecord>;
   selectedId?: string;
-  onSelect: (skill: SkillRecord) => void;
+  onSelect: (skill: SkillRecord, trigger: HTMLButtonElement) => void;
   onPage: (page: number) => void;
 }
 
@@ -51,7 +51,7 @@ export function SkillTable(props: Props) {
                         type="button"
                         class="skill-name"
                         aria-label={`${skill.name} 상세 보기`}
-                        onClick={() => props.onSelect(skill)}
+                        onClick={(event) => props.onSelect(skill, event.currentTarget)}
                       >
                         <span class="record-mark" data-document={skill.recordType === "document"}>
                           {skill.recordType === "skill" ? "S" : "D"}

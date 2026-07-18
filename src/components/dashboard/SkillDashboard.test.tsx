@@ -46,8 +46,19 @@ function inventory(name = "alpha"): InventorySnapshot {
         healthyLinks: 0,
         brokenLinks: 0,
       },
+      {
+        configRoot: "/Users/me/.qwen",
+        agent: "Qwen Code",
+        skillCount: 0,
+        documentCount: 0,
+        healthyLinks: 0,
+        brokenLinks: 1,
+      },
     ],
-    errors: { count: 0, samples: [] },
+    errors: {
+      count: 1,
+      samples: [{ path: "/Users/me/Library/Protected", code: "EACCES", message: "접근 권한이 없습니다." }],
+    },
     stats: {
       matchedFiles: 1,
       skillDefinitions: 1,
@@ -56,7 +67,7 @@ function inventory(name = "alpha"): InventorySnapshot {
       configRoots: 1,
       healthyLinks: 0,
       brokenLinks: 1,
-      errorCount: 0,
+      errorCount: 1,
     },
   };
 }
@@ -84,6 +95,38 @@ describe("SkillDashboard", () => {
 
     fireEvent.input(screen.getByRole("searchbox"), { target: { value: "없는 스킬" } });
     expect(screen.getByText("조건에 맞는 skill이 없습니다.")).toBeInTheDocument();
+  });
+
+  it("shows scan-error samples and link aggregates by configuration root", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(inventory())));
+    render(() => <SkillDashboard />);
+
+    await screen.findByRole("button", { name: /alpha 상세 보기/ });
+    fireEvent.click(screen.getByText("검색 경고 1개"));
+    expect(screen.getByText("/Users/me/Library/Protected")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /링크 상태/ }));
+    expect(screen.getByText("/Users/me/.qwen", { selector: "code.root-path" })).toBeInTheDocument();
+  });
+
+  it("moves focus into the detail and restores it after Escape", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) =>
+        String(input).startsWith("/api/skills/content")
+          ? jsonResponse({ id: "skill-alpha", path: "/tmp/SKILL.md", markdown: "# A", html: "<h1>A</h1>" })
+          : jsonResponse(inventory()),
+      ),
+    );
+    render(() => <SkillDashboard />);
+
+    const trigger = await screen.findByRole("button", { name: /alpha 상세 보기/ });
+    fireEvent.click(trigger);
+    const heading = await screen.findByRole("heading", { name: "alpha" });
+    await waitFor(() => expect(heading).toHaveFocus());
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 
   it("refreshes and opens sanitized skill detail content", async () => {
