@@ -42,7 +42,7 @@
 - Produces: `groupDuplicateSkills(records: SkillRecord[]): DuplicateSkillGroup[]`
 - Produces: `DuplicateSkillGroup { key: string; name: string; installs: SkillRecord[] }`
 
-- [ ] **Step 1: 실패 단위 테스트 작성**
+- [x] **Step 1: 실패 단위 테스트 작성**
 
 `src/lib/dashboard/duplicate-skills.test.ts`를 생성한다.
 
@@ -108,7 +108,7 @@ describe("groupDuplicateSkills", () => {
 });
 ```
 
-- [ ] **Step 2: 단위 테스트가 올바르게 실패하는지 확인**
+- [x] **Step 2: 단위 테스트가 올바르게 실패하는지 확인**
 
 Run:
 
@@ -118,7 +118,7 @@ npm test -- src/lib/dashboard/duplicate-skills.test.ts
 
 Expected: `./duplicate-skills` module을 찾지 못해 FAIL.
 
-- [ ] **Step 3: 최소 그룹 구현 작성**
+- [x] **Step 3: 최소 그룹 구현 작성**
 
 `src/lib/dashboard/duplicate-skills.ts`를 생성한다.
 
@@ -162,7 +162,7 @@ export function groupDuplicateSkills(records: SkillRecord[]): DuplicateSkillGrou
 }
 ```
 
-- [ ] **Step 4: 단위 테스트 통과 확인**
+- [x] **Step 4: 단위 테스트 통과 확인**
 
 Run:
 
@@ -172,7 +172,7 @@ npm test -- src/lib/dashboard/duplicate-skills.test.ts
 
 Expected: 1 test file, 2 tests PASS.
 
-- [ ] **Step 5: Task 1 커밋**
+- [x] **Step 5: Task 1 커밋**
 
 ```bash
 git add src/lib/dashboard/duplicate-skills.ts src/lib/dashboard/duplicate-skills.test.ts
