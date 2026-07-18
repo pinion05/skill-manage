@@ -30,7 +30,7 @@ npm start
 - 이름·수정일·경로 정렬과 검색·필터 결과 전체 원장 표시
 - 이름 기준 중복 설치 탭과 모든 설정 루트·경로 표시
 - 안전하게 렌더링한 Markdown 상세 보기
-- 공식 agent·근거 문서·경로·발견 상태를 보여주는 공식 소스 원장
+- `.agents/skills`는 공유로, vendor 경로는 해당 agent 하나에만 귀속하는 공식 소스 원장
 - 같은 물리 파일의 공식 alias는 한 번만 표시하고 모든 source sighting 보존
 - 정상·깨진 심볼릭 링크 구분
 - 권한 오류 집계
@@ -54,6 +54,8 @@ npm start
 - `XDG_CONFIG_HOME`
 
 `공식 소스` 탭에서 포함된 에이전트, first-party 문서 링크, 전역·프로젝트 경로 패턴, 현재 머신의 발견 상태를 확인할 수 있습니다. 정확한 경로가 확인되지 않은 제품은 후보 경로를 만들어 표시하지 않습니다. OpenClaw `<workspace>/skills`처럼 경로만으로 어느 제품 workspace인지 구분할 수 없는 일반 패턴은 문서에는 표시하지만 임의 Git 저장소를 추측해 자동 수집하지 않습니다.
+
+검색 호환성과 디렉터리 소유권은 분리합니다. `~/.agents/skills`와 프로젝트 `.agents/skills`는 한 번만 `공유 디렉터리`로 표시하고, `.claude/skills`, `.codex/skills`, `.cursor/skills` 같은 vendor namespace는 호환 client 수와 관계없이 각각 Claude Code, Codex CLI, Cursor 하나에만 표시합니다. 호환 client 관계는 검색 path union을 유지하는 내부 정보이며 화면·상세·집계에는 노출하지 않습니다. 전용 소유 경로가 없는 Zed와 Sakana Fugu는 공식 소스 agent 행에서 제외되지만 이들이 사용하는 공유·Codex 경로 검색은 유지됩니다.
 
 프로젝트 discovery는 `.git`, `node_modules`, 가상환경, build 산출물, cache와 Claude/Codex/Pi/Qwen/OpenCode의 세션·대화·상태 영역을 제외합니다. 공식 root가 symlink이면 target identity를 검증하고, 같은 실제 root나 파일을 가리키는 여러 alias는 한 번만 읽습니다.
 

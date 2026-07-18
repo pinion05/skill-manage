@@ -23,10 +23,14 @@ describe("resolveOfficialRegistry", () => {
       XDG_CONFIG_HOME: "/tmp/xdg",
     });
 
-    expect(agent(registry, "claude-code").globalPaths).toEqual(["/tmp/claude-home/skills"]);
+    expect(agent(registry, "claude-code").globalPaths).toEqual([
+      "/Users/me/.claude/skills",
+      "/tmp/claude-home/skills",
+    ]);
     expect(agent(registry, "codex").globalPaths).toEqual([
       "/tmp/codex-home/skills",
       "/etc/codex/skills",
+      "/Users/me/.codex/skills",
     ]);
     expect(agent(registry, "hermes").globalPaths).toEqual(
       expect.arrayContaining(["/tmp/hermes-home/skills", "~/.hermes/profiles/*/skills"]),
@@ -93,6 +97,20 @@ describe("resolveOfficialRegistry", () => {
     );
     expect(agent(registry, "cursor").globalPaths).toEqual(["/Users/me/.cursor/skills"]);
     expect(agent(registry, "cursor").projectPaths).toEqual(["**/.cursor/skills"]);
+    expect(agent(registry, "codex").projectPaths).toEqual(["**/.codex/skills"]);
+    expect(agent(registry, "opencode").globalPaths).toEqual([
+      "/Users/me/.config/opencode/skills",
+      "/Users/me/.opencode/skills",
+    ]);
+    expect(agent(registry, "opencode").projectPaths).toEqual(["**/.opencode/skills"]);
+    expect(agent(registry, "github-copilot-cli").globalPaths).toEqual([
+      "/Users/me/.copilot/skills",
+      "/Users/me/.github/skills",
+    ]);
+    expect(agent(registry, "github-copilot-cli").projectPaths).toEqual([
+      "**/.github/skills",
+      "**/.copilot/skills",
+    ]);
     expect(agent(registry, "qwen").globalPaths).toEqual(["/Users/me/.qwen/skills"]);
     expect(agent(registry, "zcode").projectPaths).toEqual([]);
   });

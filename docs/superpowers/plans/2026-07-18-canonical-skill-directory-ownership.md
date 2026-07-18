@@ -47,7 +47,7 @@
 - Adds: `owner` to internal resolved root candidates, patterns, and root matches
 - Keeps temporarily: current public root/sighting `agents[]` and `kinds[]` so discovery/UI remain buildable until Task 2
 
-- [ ] **Step 1: Write failing owner tests**
+- [x] **Step 1: Write failing owner tests**
 
 ```ts
 const registry = resolveOfficialRegistry("/Users/me", {});
@@ -67,13 +67,13 @@ expect(matchOfficialRoot("/Users/me/dev/app/.codex/skills", registry, {
 })).toMatchObject({ owner: { id: "codex", name: "Codex CLI", type: "agent" } });
 ```
 
-- [ ] **Step 2: Verify owner tests fail against the multi-agent model**
+- [x] **Step 2: Verify owner tests fail against the multi-agent model**
 
 Run: `npm test -- src/lib/inventory/official-sources.test.ts`
 
 Expected: FAIL because `shared` and `owner` do not exist and Cursor still lists compatibility paths.
 
-- [ ] **Step 3: Add owner IDs to root definitions**
+- [x] **Step 3: Add owner IDs to root definitions**
 
 Each fixed/pattern definition receives `ownerId`. Native definitions default to the declaring agent; shared helpers use `shared`; compatibility helpers explicitly name the namespace owner.
 
@@ -85,11 +85,11 @@ projectRoot(".codex/skills", "compatibility", { ownerId: "codex" });
 projectRoot(".agent/skills", "compatibility", { ownerId: "antigravity" });
 ```
 
-- [ ] **Step 4: Resolve scan relations and ownership separately**
+- [x] **Step 4: Resolve scan relations and ownership separately**
 
 Keep existing relation `kinds/agents` internally for Task 1 compatibility, but assign one `owner` to every aggregate. Reject conflicting owner IDs. Build `registry.agents` from paths owned by each agent, build `registry.shared` separately, and omit owner agents with no paths.
 
-- [ ] **Step 5: Run registry and full diagnostics**
+- [x] **Step 5: Run registry and full diagnostics**
 
 Run:
 
@@ -101,7 +101,7 @@ npm test
 
 Expected: registry ownership tests and all existing tests PASS while the serialized snapshot remains unchanged.
 
-- [ ] **Step 6: Commit Task 1**
+- [x] **Step 6: Commit Task 1**
 
 ```bash
 git add src/lib/inventory/types.ts src/lib/inventory/official-sources.ts src/lib/inventory/official-sources.test.ts
@@ -127,7 +127,7 @@ git commit -m "refactor(scan): Skill 경로 단일 소유권 projection 추가"
 - Removes: public `OfficialSourceKind`
 - Displays: one shared row followed by owned agent rows
 
-- [ ] **Step 1: Write failing discovery owner/parity tests**
+- [x] **Step 1: Write failing discovery owner/parity tests**
 
 Create fixture roots for `.agents/skills`, `.claude/skills`, and compatibility-only project `.codex/skills`. Assert owners `shared`, `claude-code`, and `codex`; assert every fixture physical file remains present once.
 
@@ -140,11 +140,11 @@ expect(snapshot.skills.find(({ name }) => name === "codex-compat")?.sourceSighti
   .toBe("codex");
 ```
 
-- [ ] **Step 2: Write failing dashboard owner tests**
+- [x] **Step 2: Write failing dashboard owner tests**
 
 Update the dashboard fixture to the wished-for owner shape. Assert the shared row appears once, Claude owns `.claude`, Cursor compatibility is absent, the source badge counts owner groups, and detail says `Claude Code · 사용자` without compatibility text.
 
-- [ ] **Step 3: Verify new tests fail on the current serialized shape**
+- [x] **Step 3: Verify new tests fail on the current serialized shape**
 
 Run:
 
@@ -154,23 +154,23 @@ npm test -- src/lib/inventory/official-discovery.test.ts src/components/dashboar
 
 Expected: FAIL because roots/sightings still expose relation arrays and the panel has no shared row.
 
-- [ ] **Step 4: Migrate public response types and discovery**
+- [x] **Step 4: Migrate public response types and discovery**
 
 Remove public relation arrays, add required summary `shared`, copy `match.owner` into roots and sightings, reject owner conflicts in root merge, and dedupe sightings by owner ID. Official records use `primary.owner.name`, including `공유 디렉터리`. Full annotation uses the same owner path.
 
-- [ ] **Step 5: Implement shared-first source ledger**
+- [x] **Step 5: Implement shared-first source ledger**
 
 Render `summary.shared` first without a documentation link, then owned agents. Filter roots by `root.owner.id`, count each root once, remove compatibility labels, and preserve semantic sections/lists, absolute path wrapping, and safe external links.
 
-- [ ] **Step 6: Simplify detail and source badge**
+- [x] **Step 6: Simplify detail and source badge**
 
 Detail renders owner name, scope, and alias path. Dashboard source badge counts `summary.agents.length + 1` when shared paths exist.
 
-- [ ] **Step 7: Update responsive styling and all fixtures**
+- [x] **Step 7: Update responsive styling and all fixtures**
 
 Add a shared-row marker, remove obsolete kind text, preserve 390px wrapping, and update scanner/store/dashboard fixtures to include `{ shared, agents, roots }`.
 
-- [ ] **Step 8: Run focused and complete verification**
+- [x] **Step 8: Run focused and complete verification**
 
 Run:
 
@@ -182,7 +182,7 @@ git diff --check
 
 Expected: ownership, alias, mode, security, UI tests PASS; Astro diagnostics zero; production build succeeds.
 
-- [ ] **Step 9: Commit Task 2**
+- [x] **Step 9: Commit Task 2**
 
 ```bash
 git add src/lib/inventory src/components/dashboard
@@ -195,23 +195,23 @@ git commit -m "refactor(ui): 공식 Skill 소스를 단일 소유자별로 표�
 - Modify: `README.md`
 - Modify: `docs/superpowers/plans/2026-07-18-canonical-skill-directory-ownership.md`
 
-- [ ] **Step 1: Document canonical ownership**
+- [x] **Step 1: Document canonical ownership**
 
 Explain that scan compatibility remains internal, `.agents/skills` is shared, vendor roots appear only under their owner, and ownerless clients are omitted from the source ledger.
 
-- [ ] **Step 2: Run real API parity smoke**
+- [x] **Step 2: Run real API parity smoke**
 
 Restart the built server and assert official mode returns owner-only roots, no `.claude` root has an owner other than `claude-code`, exact `.agents/skills` roots use `shared`, and full mode still returns records.
 
-- [ ] **Step 3: Run desktop and 390px browser QA**
+- [x] **Step 3: Run desktop and 390px browser QA**
 
 Verify one shared row, no repeated `.claude/skills` under Cursor/OpenCode, owner group badge, owner-only detail aliases, Escape focus restoration, and no horizontal overflow.
 
-- [ ] **Step 4: Request independent review and remediate**
+- [x] **Step 4: Request independent review and remediate**
 
 Review the feature range for scan coverage parity, ownership conflicts, API shape consistency, accessible source grouping, and hidden compatibility data. Fix every Critical/Important finding with a failing test first.
 
-- [ ] **Step 5: Re-run final verification and mark plan complete**
+- [x] **Step 5: Re-run final verification and mark plan complete**
 
 Run:
 

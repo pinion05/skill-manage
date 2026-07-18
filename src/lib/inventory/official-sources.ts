@@ -603,9 +603,7 @@ export function resolveOfficialRegistry(
       if (root.type === "fixed") {
         for (const resolvedPath of root.resolve(context)) {
           const normalizedPath = path.resolve(resolvedPath);
-          if (owner.type === "shared" || owner.id === definition.id) {
-            addOwnedPath(ownerGlobalPaths, owner.id, normalizedPath);
-          }
+          addOwnedPath(ownerGlobalPaths, owner.id, normalizedPath);
           const key = `${root.scope}:${normalizedPath}`;
           const existing = globalRoots.get(key) ?? {
             path: normalizedPath,
@@ -618,9 +616,7 @@ export function resolveOfficialRegistry(
           globalRoots.set(key, existing);
         }
       } else {
-        if (owner.type === "shared" || owner.id === definition.id) {
-          addOwnedPath(ownerGlobalPaths, owner.id, root.displayPath);
-        }
+        addOwnedPath(ownerGlobalPaths, owner.id, root.displayPath);
         const key = `${root.scope}:${root.pattern}`;
         const existing = globalPatterns.get(key) ?? {
           displayPath: root.displayPath,
@@ -638,9 +634,7 @@ export function resolveOfficialRegistry(
 
     for (const root of definition.projectRoots) {
       const owner = relationOwner(root, definition.id);
-      if (owner.type === "shared" || owner.id === definition.id) {
-        addOwnedPath(ownerProjectPaths, owner.id, root.displayPath);
-      }
+      addOwnedPath(ownerProjectPaths, owner.id, root.displayPath);
       if (root.discoverable === false) continue;
       const key = `${root.pattern}:${root.workspaceMarker === true}`;
       const existing = projectPatterns.get(key) ?? {
