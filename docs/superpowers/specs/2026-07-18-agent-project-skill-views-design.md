@@ -82,17 +82,19 @@ fallback record에서도 marker를 찾지 못하면 `configRoot`의 부모를 �
 ### 에이전트 패널
 
 - 공유 그룹을 강조해 첫 번째로 표시한다.
-- 각 그룹 heading에 소유자 이름과 Skill 수를 표시한다.
-- Skill row는 이름, 설명, alias 수·경로를 보여주며 기존 상세 dialog를 연다.
+- 각 소유자 그룹은 native `<details>`이며 기본은 접힌 상태다.
+- `<summary>`에 소유자 이름, Skill 수, 펼침 상태 표식을 표시한다.
+- 펼치면 Skill 이름, 설명, alias 수·경로가 나타나며 기존 상세 dialog를 연다.
 - 그룹 안의 Skill은 한 번만 렌더링한다.
 
 ### 프로젝트 패널
 
-- project dir을 heading과 `<code>` absolute path로 표시한다.
-- Skill entry는 이름과 설명을 한 번만 표시한다.
-- 같은 entry에 연결 owner badge들을 나열한다.
-- alias 경로는 owner 이름과 함께 표시한다.
+- 각 project dir은 독립적인 native `<details>`이며 기본은 접힌 상태다.
+- `<summary>`에 dir heading, `<code>` absolute path, Skill·agent 수, 펼침 상태 표식을 표시한다.
+- 펼치면 Skill 이름과 설명을 한 번만 표시하고 연결 owner badge와 owner별 alias 경로를 함께 보여준다.
 - Skill 선택은 기존 상세 dialog와 focus restoration 흐름을 재사용한다.
+
+native `<summary>`를 toggle control로 사용해 Enter/Space와 접근성 tree를 브라우저 기본 동작에 맡긴다. 그룹별 open 상태는 서로 독립적이며 탭 전환이나 snapshot 교체 뒤에는 다시 기본 접힘 상태로 시작한다. 별도의 전체 펼치기/접기 control과 open-state persistence는 추가하지 않는다.
 
 두 패널 모두 빈 상태 문구를 제공하고, 긴 절대경로를 wrap하며, 390px viewport에서 수평 overflow가 없어야 한다. 별도 pagination이나 편집 기능은 추가하지 않는다.
 
@@ -135,7 +137,8 @@ fallback record에서도 marker를 찾지 못하면 `configRoot`의 부모를 �
 
 - 새 탭 badge와 접근 가능한 pressed state가 정확하다.
 - Agent 패널에 project-only Skill이 없다.
-- Project 패널이 dir heading 아래 Skill 한 건과 여러 연결 agent를 표시한다.
+- Agent owner와 Project dir group은 기본으로 접혀 있고 summary toggle로 독립적으로 펼치고 다시 접을 수 있다.
+- Project 패널이 펼친 dir 아래 Skill 한 건과 여러 연결 agent를 표시한다.
 - Skill row에서 기존 detail dialog가 열리고 Escape 후 trigger focus가 복원된다.
 - 빈 상태를 표시한다.
 

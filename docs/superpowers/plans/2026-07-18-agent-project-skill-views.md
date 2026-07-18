@@ -450,7 +450,7 @@ git add src/components/dashboard/AgentSkillsPanel.tsx \
 git commit -m "feat(ui): 에이전트·프로젝트 Skill 탭 추가"
 ```
 
-### Task 3: Documentation, real-data QA, and review
+### Task 3: Documentation and initial real-data QA
 
 **Files:**
 - Modify: `README.md`
@@ -458,46 +458,160 @@ git commit -m "feat(ui): 에이전트·프로젝트 Skill 탭 추가"
 
 - [x] **Step 1: Document both projections**
 
-Add these README statements:
-
-```md
-- 프로젝트 경로와 `skills.md` 문서를 제외해 공유·에이전트별 `SKILL.md`만 보여주는 에이전트 탭
-- project dir별로 물리 Skill을 한 번만 표시하고 연결 에이전트·alias를 합치는 프로젝트 탭
-
-에이전트 탭은 project sighting을 집계에서 제외하되 같은 파일의 전역·관리자 sighting은 유지합니다. 프로젝트 탭은 agent namespace 앞의 project dir로 대분류하고 같은 물리 Skill의 여러 agent alias를 한 entry에 표시합니다. 전체 파일시스템 mode에서 공식 sighting이 없는 항목만 기존 `project/source-local` 분류와 경로 규칙으로 보완합니다.
-```
+Document Agent exclusion, Project physical merge, and full-mode fallback in `README.md`.
 
 - [x] **Step 2: Run real snapshot invariant smoke**
 
-Use the production API response and a small Node script importing the built projection module or a Vitest fixture to assert:
+Verify official/full Agent eligibility and unique `(project dir, device, inode)` memberships against production API snapshots.
 
-```ts
-agentProjection.groups.every((group) =>
-  group.skills.every(({ skill }) =>
-    skill.sourceSightings.some(({ scope }) => scope !== "project") ||
-    (skill.sourceSightings.length === 0 && skill.kind !== "project/source-local"),
-  ),
-);
-new Set(projectProjection.groups.flatMap((group) =>
-  group.skills.map(({ skill }) => `${group.directory}:${skill.device}:${skill.inode}`),
-)).size === projectProjection.skillCount;
+- [x] **Step 3: Run desktop and 390px browser QA**
+
+Verify six tabs, badge counts, scope exclusion, merged project owners, detail focus restoration, and document-width overflow.
+
+- [x] **Step 4: Commit Task 3**
+
+```bash
+git add README.md docs/superpowers/plans/2026-07-18-agent-project-skill-views.md
+git commit -m "docs(readme): Skill 분류 탭 사용법 추가"
 ```
 
-- [x] **Step 3: Run browser QA**
+### Task 4: Collapsible owner and project groups
 
-At desktop and 390px:
+**Files:**
+- Modify: `src/components/dashboard/AgentSkillsPanel.tsx`
+- Modify: `src/components/dashboard/ProjectSkillsPanel.tsx`
+- Modify: `src/components/dashboard/SkillDashboard.test.tsx`
+- Modify: `src/components/dashboard/dashboard.css`
+- Modify: `README.md`
 
-- confirm six tab buttons and accurate badges,
-- confirm Agent view contains no project-only entry,
-- confirm Project view uses dir heading and merged owner badges,
-- open detail and verify Escape focus restoration,
-- assert `document.documentElement.scrollWidth === innerWidth`.
+**Interfaces:**
+- Keeps panel props and projection contracts unchanged.
+- Replaces each group wrapper/header with native closed-by-default `<details>/<summary>`.
 
-- [ ] **Step 4: Request independent review and remediate**
+- [ ] **Step 1: Write failing collapse tests**
 
-Review the feature range for scope correctness, physical dedupe, fallback false positives, accessible heading/button structure, deterministic ordering, and mobile wrapping. Fix every Critical/Important finding with a failing regression test before implementation.
+Extend the dashboard test after opening each tab:
 
-- [ ] **Step 5: Mark plan complete and verify**
+```ts
+fireEvent.click(screen.getByRole("button", { name: "에이전트 1" }));
+const agentToggle = screen.getByRole("button", { name: "Claude Code Skill 목록 토글" });
+const agentGroup = agentToggle.closest("details")!;
+expect(agentGroup).not.toHaveAttribute("open");
+expect(screen.queryByRole("button", { name: /global-skill.*상세 보기/ })).not.toBeInTheDocument();
+fireEvent.click(agentToggle);
+expect(agentGroup).toHaveAttribute("open");
+expect(screen.getByRole("button", { name: /global-skill.*상세 보기/ })).toBeInTheDocument();
+fireEvent.click(agentToggle);
+expect(agentGroup).not.toHaveAttribute("open");
+
+fireEvent.click(screen.getByRole("button", { name: "프로젝트 2" }));
+const projectToggle = screen.getByRole("button", { name: "app 프로젝트 Skill 목록 토글" });
+const projectGroup = projectToggle.closest("details")!;
+expect(projectGroup).not.toHaveAttribute("open");
+fireEvent.click(projectToggle);
+expect(projectGroup).toHaveAttribute("open");
+expect(within(projectGroup).getByRole("button", { name: /project-only.*상세 보기/ })).toBeInTheDocument();
+```
+
+- [ ] **Step 2: Run dashboard tests and verify RED**
+
+Run:
+
+```bash
+npm test -- src/components/dashboard/SkillDashboard.test.tsx
+```
+
+Expected: FAIL because owner/project group toggles do not exist and Skill rows are visible immediately.
+
+- [ ] **Step 3: Implement native group toggles**
+
+In both panels, replace each group `<article>` with `<details>` and its direct `<header>` with the first-child `<summary>`. Add an accessible label:
+
+```tsx
+<details class="agent-skill-group" classList={{ "is-shared-owner": group.owner.type === "shared" }}>
+  <summary aria-label={`${group.owner.name} Skill 목록 토글`}>
+    <h3>{group.owner.name}</h3>
+    <span>{group.skills.length.toLocaleString("ko-KR")} SKILLS</span>
+  </summary>
+  <ul class="taxonomy-skill-list">...</ul>
+</details>
+```
+
+```tsx
+<details class="project-skill-group">
+  <summary aria-label={`${pathLeaf(group.directory)} 프로젝트 Skill 목록 토글`}>
+    <div><h3>{pathLeaf(group.directory)}</h3><code>{group.directory}</code></div>
+    <span>{group.skills.length.toLocaleString("ko-KR")} SKILLS · {group.ownerCount.toLocaleString("ko-KR")} AGENTS</span>
+  </summary>
+  <ul class="taxonomy-skill-list">...</ul>
+</details>
+```
+
+Do not set the `open` attribute, so every group starts collapsed.
+
+- [ ] **Step 4: Style summary state without custom JS**
+
+Change group header selectors to `> summary`, remove the native marker, reserve a right-side state cell, and use CSS state labels:
+
+```css
+.agent-skill-group > summary, .project-skill-group > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 1rem;
+  align-items: start;
+  padding: 1rem 0 .75rem;
+  cursor: pointer;
+  list-style: none;
+}
+.agent-skill-group > summary::-webkit-details-marker,
+.project-skill-group > summary::-webkit-details-marker { display: none; }
+.agent-skill-group > summary::after,
+.project-skill-group > summary::after { content: "+"; color: var(--accent); font: 700 1rem/1 var(--mono); }
+.agent-skill-group[open] > summary::after,
+.project-skill-group[open] > summary::after { content: "−"; }
+.agent-skill-group > summary:focus-visible,
+.project-skill-group > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (max-width: 760px) {
+  .agent-skill-group > summary, .project-skill-group > summary { grid-template-columns: minmax(0, 1fr) auto; }
+  .agent-skill-group > summary > span, .project-skill-group > summary > span { grid-column: 1; }
+  .agent-skill-group > summary::after, .project-skill-group > summary::after { grid-column: 2; grid-row: 1; }
+}
+```
+
+- [ ] **Step 5: Document and verify**
+
+Add to README that Agent owner groups and Project dir groups start collapsed and expand independently. Run:
+
+```bash
+npm test -- src/components/dashboard/SkillDashboard.test.tsx
+npm test
+npm run check
+git diff --check
+```
+
+Expected: all 94+ tests pass and diagnostics are zero.
+
+- [ ] **Step 6: Commit Task 4**
+
+```bash
+git add src/components/dashboard/AgentSkillsPanel.tsx \
+  src/components/dashboard/ProjectSkillsPanel.tsx \
+  src/components/dashboard/SkillDashboard.test.tsx \
+  src/components/dashboard/dashboard.css README.md
+git commit -m "feat(ui): Skill 그룹 접기·펼치기 추가"
+```
+
+### Task 5: Final review, browser QA, and verification
+
+- [ ] **Step 1: Request independent review and remediate**
+
+Review the complete feature for scope correctness, physical dedupe, fallback false positives, native details accessibility, deterministic ordering, and mobile wrapping. Fix every Critical/Important finding with a regression test.
+
+- [ ] **Step 2: Run live collapse QA**
+
+At desktop and 390px verify all groups start closed, Agent/Project summaries independently toggle, detail opens from an expanded group and restores focus, and `document.documentElement.scrollWidth === innerWidth`.
+
+- [ ] **Step 3: Mark plan complete and verify**
 
 Run:
 
@@ -508,10 +622,11 @@ git diff --check
 
 Expected: Vitest, Astro check, and production build pass.
 
-- [ ] **Step 6: Commit final docs**
+- [ ] **Step 4: Commit final plan state**
 
 ```bash
-git add README.md docs/superpowers/plans/2026-07-18-agent-project-skill-views.md
-git commit -m "docs(readme): Skill 분류 탭 사용법 추가"
+git add docs/superpowers/specs/2026-07-18-agent-project-skill-views-design.md \
+  docs/superpowers/plans/2026-07-18-agent-project-skill-views.md
+git commit -m "docs(plan): Skill 분류 보기 구현 완료 표시"
 test -z "$(git status --porcelain)"
 ```
