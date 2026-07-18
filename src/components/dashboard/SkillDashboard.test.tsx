@@ -77,6 +77,43 @@ function inventory(name = "alpha"): InventorySnapshot {
   };
 }
 
+function sourcedInventory(): InventorySnapshot {
+  const snapshot = inventory();
+  snapshot.officialSources = {
+    agents: [
+      {
+        id: "claude-code",
+        name: "Claude Code",
+        documentationUrl: "https://code.claude.com/docs/en/skills",
+        globalPaths: ["/Users/me/.claude/skills"],
+        projectPaths: ["**/.claude/skills"],
+      },
+    ],
+    roots: [
+      {
+        id: "claude-root",
+        path: "/Users/me/.claude/skills",
+        canonicalPath: "/Users/me/.shared/skills",
+        scope: "user",
+        kinds: ["native", "compatibility"],
+        agents: ["Claude Code", "Cursor"],
+        exists: true,
+        skillCount: 1,
+      },
+    ],
+  };
+  snapshot.skills[0]!.sourceSightings = [
+    {
+      rootPath: "/Users/me/.claude/skills",
+      path: "/Users/me/.claude/skills/alpha/SKILL.md",
+      scope: "user",
+      kinds: ["native", "compatibility"],
+      agents: ["Claude Code", "Cursor"],
+    },
+  ];
+  return snapshot;
+}
+
 function duplicateInventory(): InventorySnapshot {
   const snapshot = inventory("Alpha");
   const first = snapshot.skills[0]!;
@@ -127,6 +164,68 @@ describe("SkillDashboard", () => {
 
     fireEvent.input(screen.getByRole("searchbox"), { target: { value: "없는 스킬" } });
     expect(screen.getByText("조건에 맞는 skill이 없습니다.")).toBeInTheDocument();
+  });
+
+  it("uses official mode by default and switches to a separate full snapshot", async () => {
+    const official = inventory("official-alpha");
+    const full = inventory("full-alpha");
+    full.scanMode = "full";
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) =>
+      jsonResponse(String(input).includes("mode=full") ? full : official),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    render(() => <SkillDashboard />);
+
+    expect(await screen.findByRole("button", { name: /official-alpha 상세 보기/ })).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([input]) => String(input) === "/api/inventory?mode=official")).toBe(
+      true,
+    );
+    expect(screen.getByRole("button", { name: "공식 디렉터리" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "전체 파일시스템" }));
+
+    expect(await screen.findByRole("button", { name: /full-alpha 상세 보기/ })).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([input]) => String(input) === "/api/inventory?mode=full")).toBe(
+      true,
+    );
+    expect(screen.getByRole("button", { name: "전체 파일시스템" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("shows verified official sources and every alias in the existing detail dialog", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) =>
+      String(input).startsWith("/api/skills/content")
+        ? jsonResponse({ id: "skill-alpha", path: "/tmp/SKILL.md", markdown: "# A", html: "<h1>A</h1>" })
+        : jsonResponse(sourcedInventory()),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    render(() => <SkillDashboard />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "공식 소스 1" }));
+    const docsLink = screen.getByRole("link", { name: "Claude Code 공식 문서" });
+    expect(docsLink).toHaveAttribute("href", "https://code.claude.com/docs/en/skills");
+    expect(docsLink).toHaveAttribute("rel", "noreferrer noopener");
+    expect(screen.getAllByText("/Users/me/.claude/skills").length).toBeGreaterThan(0);
+    expect(screen.getByText("**/.claude/skills")).toBeInTheDocument();
+    expect(screen.getByText("발견 · Skill 1개")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Skill 파일 1" }));
+    fireEvent.click(screen.getByRole("button", { name: /alpha 상세 보기/ }));
+    expect(await screen.findByRole("heading", { name: "공식 소스 경로" })).toBeInTheDocument();
+    expect(screen.getByText("/Users/me/.claude/skills/alpha/SKILL.md")).toBeInTheDocument();
+    expect(screen.getByText("Claude Code · Cursor")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(
+          ([input]) => String(input) === "/api/skills/content?id=skill-alpha&mode=official",
+        ),
+      ).toBe(true),
+    );
   });
 
   it("renders every filtered skill in one ledger without pagination", async () => {
@@ -202,7 +301,7 @@ describe("SkillDashboard", () => {
     expect(await screen.findByRole("button", { name: "중복 설치 0" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "파일시스템 재검색" }));
     expect(await screen.findByRole("button", { name: "중복 설치 1" })).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith("/api/inventory/refresh", { method: "POST" });
+    expect(fetchMock).toHaveBeenCalledWith("/api/inventory/refresh?mode=official", { method: "POST" });
   });
 
   it("shows scan-error samples and link aggregates by configuration root", async () => {
@@ -266,7 +365,7 @@ describe("SkillDashboard", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /alpha-refreshed 상세 보기/ })).toBeInTheDocument();
     });
-    expect(fetchMock).toHaveBeenCalledWith("/api/inventory/refresh", { method: "POST" });
+    expect(fetchMock).toHaveBeenCalledWith("/api/inventory/refresh?mode=official", { method: "POST" });
     expect(screen.getByText("파일시스템 재검색이 완료되었습니다.")).toHaveAttribute(
       "aria-live",
       "polite",

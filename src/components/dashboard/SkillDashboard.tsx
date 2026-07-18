@@ -3,6 +3,7 @@ import { groupDuplicateSkills, normalizeSkillName } from "../../lib/dashboard/du
 import { applySkillQuery, type DashboardQuery } from "../../lib/dashboard/filter";
 import type {
   InventorySnapshot,
+  ScanMode,
   SkillKind,
   SkillRecord,
   SkillRecordType,
@@ -10,6 +11,7 @@ import type {
 import { DuplicateSkillsPanel } from "./DuplicateSkillsPanel";
 import { FilterBar } from "./FilterBar";
 import { LinkHealthPanel } from "./LinkHealthPanel";
+import { OfficialSourcesPanel } from "./OfficialSourcesPanel";
 import { ScanWarnings } from "./ScanWarnings";
 import { SkillDetail } from "./SkillDetail";
 import { SkillTable } from "./SkillTable";
@@ -41,9 +43,12 @@ const timeFormatter = new Intl.DateTimeFormat("ko-KR", {
 });
 
 export function SkillDashboard() {
-  const [snapshot, { mutate }] = createResource(() => requestInventory("/api/inventory"));
+  const [scanMode, setScanMode] = createSignal<ScanMode>("official");
+  const [snapshot, { mutate }] = createResource(scanMode, (mode) =>
+    requestInventory(`/api/inventory?mode=${mode}`),
+  );
   const [query, setQuery] = createSignal<DashboardQuery>(INITIAL_QUERY);
-  const [view, setView] = createSignal<"skills" | "duplicates" | "links">("skills");
+  const [view, setView] = createSignal<"skills" | "duplicates" | "links" | "sources">("skills");
   const [selected, setSelected] = createSignal<SkillRecord>();
   const [refreshing, setRefreshing] = createSignal(false);
   const [refreshStatus, setRefreshStatus] = createSignal("");
@@ -71,12 +76,30 @@ export function SkillDashboard() {
     setQuery((current) => ({ ...current, ...patch }));
   };
 
+  const changeScanMode = (nextMode: ScanMode) => {
+    if (nextMode === scanMode()) return;
+    setSelected();
+    detailTrigger = undefined;
+    setQuery(INITIAL_QUERY);
+    setActionError("");
+    setRefreshStatus(
+      nextMode === "official"
+        ? "공식 디렉터리 인벤토리를 불러옵니다."
+        : "전체 파일시스템 인벤토리를 불러옵니다.",
+    );
+    mutate(undefined);
+    setScanMode(nextMode);
+  };
+
   const refresh = async () => {
+    const currentMode = scanMode();
     setRefreshing(true);
     setRefreshStatus("파일시스템 재검색을 시작했습니다.");
     setActionError("");
     try {
-      const next = await requestInventory("/api/inventory/refresh", { method: "POST" });
+      const next = await requestInventory(`/api/inventory/refresh?mode=${currentMode}`, {
+        method: "POST",
+      });
       mutate(next);
       const currentSelection = selected();
       if (currentSelection) setSelected(next.skills.find((skill) => skill.id === currentSelection.id));
@@ -110,6 +133,26 @@ export function SkillDashboard() {
               </p>
             )}
           </Show>
+          <div class="scan-mode-control" role="group" aria-label="검색 범위">
+            <button
+              type="button"
+              aria-pressed={scanMode() === "official"}
+              classList={{ active: scanMode() === "official" }}
+              disabled={refreshing() || snapshot.loading}
+              onClick={() => changeScanMode("official")}
+            >
+              공식 디렉터리
+            </button>
+            <button
+              type="button"
+              aria-pressed={scanMode() === "full"}
+              classList={{ active: scanMode() === "full" }}
+              disabled={refreshing() || snapshot.loading}
+              onClick={() => changeScanMode("full")}
+            >
+              전체 파일시스템
+            </button>
+          </div>
           <button type="button" onClick={refresh} disabled={refreshing() || snapshot.loading}>
             <span aria-hidden="true">↻</span>
             {refreshing() ? "재검색 중" : "파일시스템 재검색"}
@@ -170,6 +213,14 @@ export function SkillDashboard() {
               >
                 링크 상태 <span>{current().links.length.toLocaleString("ko-KR")}</span>
               </button>
+              <button
+                type="button"
+                aria-pressed={view() === "sources"}
+                classList={{ active: view() === "sources" }}
+                onClick={() => setView("sources")}
+              >
+                공식 소스 <span>{current().officialSources.agents.length.toLocaleString("ko-KR")}</span>
+              </button>
             </nav>
 
             <Switch>
@@ -208,6 +259,9 @@ export function SkillDashboard() {
               <Match when={view() === "links"}>
                 <LinkHealthPanel links={current().links} roots={current().roots} />
               </Match>
+              <Match when={view() === "sources"}>
+                <OfficialSourcesPanel summary={current().officialSources} />
+              </Match>
             </Switch>
 
             <footer class="inventory-footer">
@@ -222,6 +276,7 @@ export function SkillDashboard() {
         {(skill) => (
           <SkillDetail
             skill={skill}
+            scanMode={snapshot()?.scanMode ?? scanMode()}
             duplicates={selectedDuplicates()}
             returnFocus={detailTrigger}
             onClose={() => setSelected()}

@@ -1,20 +1,41 @@
 import { createResource, createSignal, For, onCleanup, onMount, Show } from "solid-js";
-import type { SkillContent, SkillRecord } from "../../lib/inventory/types";
+import type {
+  OfficialSourceKind,
+  OfficialSourceScope,
+  ScanMode,
+  SkillContent,
+  SkillRecord,
+} from "../../lib/inventory/types";
 import { kindLabel } from "./FilterBar";
 
 interface Props {
   skill: SkillRecord;
+  scanMode: ScanMode;
   duplicates: SkillRecord[];
   returnFocus?: HTMLElement;
   onClose: () => void;
 }
 
-async function fetchContent(id: string): Promise<SkillContent> {
-  const response = await fetch(`/api/skills/content?id=${encodeURIComponent(id)}`);
+async function fetchContent(source: { id: string; mode: ScanMode }): Promise<SkillContent> {
+  const response = await fetch(
+    `/api/skills/content?id=${encodeURIComponent(source.id)}&mode=${source.mode}`,
+  );
   const body = await response.json();
   if (!response.ok) throw new Error(body.error ?? "본문을 읽지 못했습니다.");
   return body as SkillContent;
 }
+
+const sourceKindLabels: Record<OfficialSourceKind, string> = {
+  native: "native",
+  shared: "shared",
+  compatibility: "compatibility",
+};
+
+const sourceScopeLabels: Record<OfficialSourceScope, string> = {
+  user: "사용자",
+  project: "프로젝트",
+  admin: "관리자",
+};
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
   dateStyle: "medium",
@@ -22,7 +43,10 @@ const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
 });
 
 export function SkillDetail(props: Props) {
-  const [content] = createResource(() => props.skill.id, fetchContent);
+  const [content] = createResource(
+    () => ({ id: props.skill.id, mode: props.scanMode }),
+    fetchContent,
+  );
   const [copyState, setCopyState] = createSignal("경로 복사");
   let panel!: HTMLElement;
   let heading!: HTMLHeadingElement;
@@ -108,6 +132,29 @@ export function SkillDetail(props: Props) {
           <div><span>ABSOLUTE PATH</span><button type="button" onClick={copyPath}>{copyState()}</button></div>
           <code>{props.skill.path}</code>
         </section>
+
+        <Show when={props.skill.sourceSightings.length > 0}>
+          <section class="source-sighting-list" aria-labelledby="source-sighting-title">
+            <h3 id="source-sighting-title">공식 소스 경로</h3>
+            <ul>
+              <For each={props.skill.sourceSightings}>
+                {(sighting) => (
+                  <li>
+                    <div>
+                      <strong>{sighting.agents.join(" · ")}</strong>
+                      <span>
+                        {sourceScopeLabels[sighting.scope]} · {sighting.kinds
+                          .map((kind) => sourceKindLabels[kind])
+                          .join(" · ")}
+                      </span>
+                    </div>
+                    <code>{sighting.path}</code>
+                  </li>
+                )}
+              </For>
+            </ul>
+          </section>
+        </Show>
 
         <Show when={props.duplicates.length > 0}>
           <section class="duplicate-list">
