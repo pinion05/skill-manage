@@ -201,7 +201,10 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
   const defaults = defaultScanOptions(overrides.home);
   const options: ScanOptions = { ...defaults, ...overrides };
   const startedAt = performance.now();
-  const searchRoots = await existingDirectories(options.roots);
+  const availableSearchRoots = await existingDirectories(options.roots);
+  const directoryBudget = Math.max(1, Math.floor(options.maxDirectories));
+  const searchRoots = availableSearchRoots.slice(0, directoryBudget);
+  const omittedSearchRoot = availableSearchRoots[searchRoots.length];
   const skills: SkillRecord[] = [];
   const links: SkillLink[] = [];
   const errorSamples: ScanError[] = [];
@@ -216,6 +219,7 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
   const recordIssue = (code: string, errorPath: string): void => {
     recordError(codedError(code), errorPath);
   };
+  if (omittedSearchRoot) recordIssue("SCAN_LIMIT", omittedSearchRoot);
 
   const inspectSkill = async (filePath: string, fileName: string): Promise<void> => {
     try {
@@ -329,7 +333,7 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
     while (waiters.length) wake();
   };
   const enqueue = (directory: string): void => {
-    if (discoveredDirectories >= options.maxDirectories) {
+    if (discoveredDirectories >= directoryBudget) {
       if (!scanLimitRecorded) {
         scanLimitRecorded = true;
         recordIssue("SCAN_LIMIT", directory);

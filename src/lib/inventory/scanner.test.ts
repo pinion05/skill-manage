@@ -196,6 +196,29 @@ describe("scanInventory", () => {
     });
   });
 
+  it("bounds initial search roots before starting workers", async () => {
+    const root = await makeFixture();
+    const roots = await Promise.all(
+      Array.from({ length: 4 }, async (_, index) => {
+        const scanRoot = path.join(root, `initial-${index}`);
+        await mkdir(scanRoot, { recursive: true });
+        await writeFile(
+          path.join(scanRoot, "SKILL.md"),
+          `---\nname: initial-skill-${index}\n---\n`,
+        );
+        return scanRoot;
+      }),
+    );
+
+    const snapshot = await scanInventory({ roots, home: root, maxDirectories: 2 });
+
+    expect(snapshot.searchRoots).toHaveLength(2);
+    expect(snapshot.skills).toHaveLength(2);
+    expect(snapshot.errors.samples).toContainEqual(
+      expect.objectContaining({ code: "SCAN_LIMIT", path: roots[2] }),
+    );
+  });
+
   it("bounds the main traversal queue before expanding a broad root", async () => {
     const root = await makeFixture();
     const broadRoot = path.join(root, "broad-root");
