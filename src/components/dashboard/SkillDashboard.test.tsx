@@ -160,6 +160,71 @@ function duplicateInventory(): InventorySnapshot {
   return snapshot;
 }
 
+function skillViewInventory(): InventorySnapshot {
+  const snapshot = inventory("global-skill");
+  const globalSkill = snapshot.skills[0]!;
+  globalSkill.path = "/Users/me/.claude/skills/global-skill/SKILL.md";
+  globalSkill.skillsRoot = "/Users/me/.claude/skills";
+  globalSkill.configRoot = "/Users/me/.claude";
+  globalSkill.agent = "Claude Code";
+  globalSkill.sourceSightings = [
+    {
+      rootPath: "/Users/me/.claude/skills",
+      path: "/Users/me/.claude/skills/global-skill/SKILL.md",
+      scope: "user",
+      owner: { id: "claude-code", name: "Claude Code", type: "agent" },
+    },
+  ];
+  snapshot.skills = [
+    globalSkill,
+    {
+      ...globalSkill,
+      id: "skill-project-only",
+      name: "project-only",
+      description: "프로젝트 전용 스킬",
+      path: "/Users/me/dev/app/.claude/skills/project-only/SKILL.md",
+      skillsRoot: "/Users/me/dev/app/.claude/skills",
+      configRoot: "/Users/me/dev/app/.claude",
+      kind: "project/source-local",
+      inode: 3,
+      sourceSightings: [
+        {
+          rootPath: "/Users/me/dev/app/.claude/skills",
+          path: "/Users/me/dev/app/.claude/skills/project-only/SKILL.md",
+          scope: "project",
+          owner: { id: "claude-code", name: "Claude Code", type: "agent" },
+        },
+        {
+          rootPath: "/Users/me/dev/app/.cursor/skills",
+          path: "/Users/me/dev/app/.cursor/skills/project-only/SKILL.md",
+          scope: "project",
+          owner: { id: "cursor", name: "Cursor", type: "agent" },
+        },
+      ],
+    },
+    {
+      ...globalSkill,
+      id: "document-only",
+      name: "document-only",
+      path: "/Users/me/dev/app/skills.md",
+      fileName: "skills.md",
+      recordType: "document",
+      skillsRoot: "/Users/me/dev/app",
+      configRoot: "/Users/me/dev/app",
+      kind: "project/source-local",
+      inode: 4,
+      sourceSightings: [],
+    },
+  ];
+  snapshot.stats.matchedFiles = 3;
+  snapshot.stats.skillDefinitions = 2;
+  snapshot.stats.documents = 1;
+  snapshot.stats.uniqueNames = 3;
+  snapshot.roots[0]!.skillCount = 2;
+  snapshot.roots[0]!.documentCount = 1;
+  return snapshot;
+}
+
 function jsonResponse(body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status: 200,
@@ -258,6 +323,45 @@ describe("SkillDashboard", () => {
         ),
       ).toBe(true),
     );
+  });
+
+  it("shows non-project Skills by agent and merges project aliases by directory", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) =>
+        String(input).startsWith("/api/skills/content")
+          ? jsonResponse({
+              id: "skill-project-only",
+              path: "/Users/me/dev/app/.claude/skills/project-only/SKILL.md",
+              markdown: "# Project only",
+              html: "<h1>Project only</h1>",
+            })
+          : jsonResponse(skillViewInventory()),
+      ),
+    );
+    render(() => <SkillDashboard />);
+
+    expect(await screen.findByRole("button", { name: "에이전트 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "프로젝트 1" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "에이전트 1" }));
+    expect(screen.getByRole("heading", { name: "Claude Code" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /global-skill.*상세 보기/ })).toBeInTheDocument();
+    expect(screen.queryByText("project-only")).not.toBeInTheDocument();
+    expect(screen.queryByText("document-only")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "프로젝트 1" }));
+    const project = screen.getByRole("heading", { name: "app" }).closest("article")!;
+    expect(within(project).getByText("/Users/me/dev/app")).toBeInTheDocument();
+    expect(within(project).getAllByText("project-only")).toHaveLength(1);
+    expect(within(project).getByText("Claude Code")).toBeInTheDocument();
+    expect(within(project).getByText("Cursor")).toBeInTheDocument();
+
+    const trigger = within(project).getByRole("button", { name: /project-only.*상세 보기/ });
+    fireEvent.click(trigger);
+    expect(await screen.findByRole("dialog")).toHaveAccessibleName("project-only");
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 
   it("renders every filtered skill in one ledger without pagination", async () => {

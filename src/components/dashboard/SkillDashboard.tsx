@@ -1,6 +1,10 @@
 import { createMemo, createResource, createSignal, Match, Show, Switch } from "solid-js";
 import { groupDuplicateSkills, normalizeSkillName } from "../../lib/dashboard/duplicate-skills";
 import { applySkillQuery, type DashboardQuery } from "../../lib/dashboard/filter";
+import {
+  createAgentSkillProjection,
+  createProjectSkillProjection,
+} from "../../lib/dashboard/skill-views";
 import type {
   InventorySnapshot,
   ScanMode,
@@ -8,10 +12,12 @@ import type {
   SkillRecord,
   SkillRecordType,
 } from "../../lib/inventory/types";
+import { AgentSkillsPanel } from "./AgentSkillsPanel";
 import { DuplicateSkillsPanel } from "./DuplicateSkillsPanel";
 import { FilterBar } from "./FilterBar";
 import { LinkHealthPanel } from "./LinkHealthPanel";
 import { OfficialSourcesPanel } from "./OfficialSourcesPanel";
+import { ProjectSkillsPanel } from "./ProjectSkillsPanel";
 import { ScanWarnings } from "./ScanWarnings";
 import { SkillDetail } from "./SkillDetail";
 import { SkillTable } from "./SkillTable";
@@ -48,7 +54,9 @@ export function SkillDashboard() {
     requestInventory(`/api/inventory?mode=${mode}`),
   );
   const [query, setQuery] = createSignal<DashboardQuery>(INITIAL_QUERY);
-  const [view, setView] = createSignal<"skills" | "duplicates" | "links" | "sources">("skills");
+  const [view, setView] = createSignal<
+    "skills" | "agents" | "projects" | "duplicates" | "links" | "sources"
+  >("skills");
   const [selected, setSelected] = createSignal<SkillRecord>();
   const [refreshing, setRefreshing] = createSignal(false);
   const [refreshStatus, setRefreshStatus] = createSignal("");
@@ -59,6 +67,8 @@ export function SkillDashboard() {
     const current = snapshot();
     return current ? applySkillQuery(current.skills, query()) : [];
   });
+  const agentSkills = createMemo(() => createAgentSkillProjection(snapshot()?.skills ?? []));
+  const projectSkills = createMemo(() => createProjectSkillProjection(snapshot()?.skills ?? []));
   const duplicateGroups = createMemo(() => groupDuplicateSkills(snapshot()?.skills ?? []));
   const selectedDuplicates = createMemo(() => {
     const current = selected();
@@ -199,6 +209,22 @@ export function SkillDashboard() {
               </button>
               <button
                 type="button"
+                aria-pressed={view() === "agents"}
+                classList={{ active: view() === "agents" }}
+                onClick={() => setView("agents")}
+              >
+                에이전트 <span>{agentSkills().skillCount.toLocaleString("ko-KR")}</span>
+              </button>
+              <button
+                type="button"
+                aria-pressed={view() === "projects"}
+                classList={{ active: view() === "projects" }}
+                onClick={() => setView("projects")}
+              >
+                프로젝트 <span>{projectSkills().skillCount.toLocaleString("ko-KR")}</span>
+              </button>
+              <button
+                type="button"
                 aria-pressed={view() === "duplicates"}
                 classList={{ active: view() === "duplicates" }}
                 onClick={() => setView("duplicates")}
@@ -251,6 +277,24 @@ export function SkillDashboard() {
                 <SkillTable
                   skills={filteredSkills()}
                   selectedId={selected()?.id}
+                  onSelect={(skill, trigger) => {
+                    detailTrigger = trigger;
+                    setSelected(skill);
+                  }}
+                />
+              </Match>
+              <Match when={view() === "agents"}>
+                <AgentSkillsPanel
+                  projection={agentSkills()}
+                  onSelect={(skill, trigger) => {
+                    detailTrigger = trigger;
+                    setSelected(skill);
+                  }}
+                />
+              </Match>
+              <Match when={view() === "projects"}>
+                <ProjectSkillsPanel
+                  projection={projectSkills()}
                   onSelect={(skill, trigger) => {
                     detailTrigger = trigger;
                     setSelected(skill);

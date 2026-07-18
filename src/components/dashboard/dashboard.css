@@ -138,6 +138,37 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
 .loading-stats i { height: 4.5rem; border-right: 1px solid var(--line); background: linear-gradient(100deg, transparent 25%, rgb(255 255 255 / 0.65) 45%, transparent 65%); background-size: 220% 100%; animation: scan-pass 1.6s ease-in-out infinite; }
 .loading-stats i:last-child { border-right: 0; }
 
+.taxonomy-panel { padding: 2rem 0 3rem; }
+.taxonomy-heading { padding-bottom: 1rem; border-bottom: 1px solid var(--ink); }
+.taxonomy-heading h2 { margin-top: 0.35rem; font: 700 clamp(1.8rem, 3vw, 2.8rem)/1 var(--display); }
+.taxonomy-heading p:last-child { margin-top: 0.5rem; color: var(--muted); font-size: 0.8rem; }
+.taxonomy-group-list, .project-group-list { display: grid; }
+.agent-skill-group, .project-skill-group { border-bottom: 1px solid var(--ink); }
+.agent-skill-group > header, .project-skill-group > header { display: flex; justify-content: space-between; gap: 1rem; padding: 1rem 0 0.75rem; }
+.agent-skill-group > header h3, .project-skill-group > header h3 { font: 700 1.25rem/1.1 var(--display); overflow-wrap: anywhere; }
+.agent-skill-group > header span, .project-skill-group > header span { color: var(--accent); font: 700 0.64rem/1 var(--mono); }
+.agent-skill-group.is-shared-owner { box-shadow: inset 3px 0 var(--accent); padding-left: 0.8rem; }
+.taxonomy-skill-list, .taxonomy-alias-list { margin: 0; padding: 0; list-style: none; }
+.taxonomy-skill-list > li { display: grid; grid-template-columns: minmax(12rem, 0.8fr) minmax(0, 1.2fr); gap: 1rem; padding: 0.85rem 0; border-top: 1px solid var(--line); transition: background 120ms; }
+.taxonomy-skill-list > li > * { min-width: 0; }
+.taxonomy-skill-list > li:hover { background: color-mix(in srgb, var(--accent-soft) 62%, transparent); }
+.taxonomy-skill-list button { min-width: 0; display: grid; align-content: start; gap: 0.3rem; border: 0; background: transparent; color: var(--ink); text-align: left; cursor: pointer; }
+.taxonomy-skill-list button:hover strong { color: var(--accent); }
+.taxonomy-skill-list button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.taxonomy-skill-list button strong { overflow-wrap: anywhere; font-size: 0.93rem; }
+.taxonomy-skill-list button span { color: var(--muted); line-height: 1.4; }
+.taxonomy-alias-list { display: grid; align-content: start; gap: 0.35rem; }
+.taxonomy-alias-list li { min-width: 0; }
+.taxonomy-alias-list code, .project-skill-group > header code { overflow-wrap: anywhere; color: #3f4b5f; font: 0.63rem/1.4 var(--mono); }
+.project-skill-group > header > div { min-width: 0; display: grid; gap: 0.35rem; }
+.project-skill-group > header span { white-space: nowrap; }
+.project-skill-group .taxonomy-alias-list { grid-column: 2; }
+.project-skill-group .taxonomy-alias-list li { display: grid; grid-template-columns: minmax(6rem, 0.35fr) minmax(0, 1fr); gap: 0.7rem; }
+.project-skill-group .taxonomy-alias-list strong { font-size: 0.68rem; }
+.owner-badges { display: flex; flex-wrap: wrap; align-content: start; gap: 0.35rem; }
+.owner-badges span { padding: 0.25rem 0.4rem; background: var(--accent-soft); color: var(--accent); font: 700 0.58rem/1 var(--mono); }
+.taxonomy-empty { min-height: 20rem; display: grid; place-items: center; color: var(--muted); }
+
 .duplicate-skills { padding: 2rem 0 3rem; }
 .duplicate-skills-heading { padding-bottom: 1rem; border-bottom: 1px solid var(--ink); }
 .duplicate-skills-heading h2 { margin-top: 0.35rem; font: 700 clamp(1.8rem, 3vw, 2.8rem)/1 var(--display); }
@@ -314,6 +345,11 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
   td.skill-source::before { content: "설정 / 성격"; grid-row: 1 / span 3; }
   td.skill-date::before { content: "수정"; }
   .skill-source strong, .skill-source span, .skill-source code { grid-column: 2; white-space: normal; overflow-wrap: anywhere; }
+  .taxonomy-skill-list > li { grid-template-columns: 1fr; gap: 0.65rem; }
+  .agent-skill-group > header, .project-skill-group > header { align-items: flex-start; flex-direction: column; }
+  .project-skill-group > header span { white-space: normal; }
+  .project-skill-group .taxonomy-alias-list { grid-column: 1; }
+  .project-skill-group .taxonomy-alias-list li { grid-template-columns: 1fr; gap: 0.2rem; }
   .duplicate-group > header { align-items: flex-start; }
   .duplicate-group li > button { grid-template-columns: 1fr; gap: 0.65rem; }
   .duplicate-path-field code { white-space: normal; overflow-wrap: anywhere; }
