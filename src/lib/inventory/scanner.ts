@@ -19,6 +19,7 @@ export interface ScanOptions {
   concurrency: number;
   maxErrorSamples: number;
   maxLinkTargetDirectories: number;
+  followDirectoryLinks: boolean;
 }
 
 const SKILL_FILE = "skill.md";
@@ -33,6 +34,7 @@ export function defaultScanOptions(home = os.homedir()): ScanOptions {
     concurrency: 12,
     maxErrorSamples: 100,
     maxLinkTargetDirectories: MAX_LINK_TARGET_DIRECTORIES,
+    followDirectoryLinks: false,
   };
 }
 
@@ -298,6 +300,7 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
   };
 
   const queue = [...searchRoots];
+  const visitedDirectories = new Set<string>();
   let pending = queue.length;
   const waiters: Array<() => void> = [];
   const wake = (): void => {
@@ -322,11 +325,27 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
 
   const processDirectory = async (directoryPath: string): Promise<void> => {
     try {
+      const directoryStat = await stat(directoryPath);
+      if (!directoryStat.isDirectory()) return;
+      const directoryIdentity = `${directoryStat.dev}:${directoryStat.ino}`;
+      if (visitedDirectories.has(directoryIdentity)) return;
+      visitedDirectories.add(directoryIdentity);
+
       const directory = await opendir(directoryPath);
       for await (const entry of directory) {
         const entryPath = path.join(directoryPath, entry.name);
         if (entry.isSymbolicLink()) {
-          if (isSkillLink(entryPath)) await inspectLink(entryPath);
+          if (isSkillLink(entryPath) || options.followDirectoryLinks) {
+            await inspectLink(entryPath);
+            if (options.followDirectoryLinks) {
+              try {
+                const targetStat = await stat(entryPath);
+                if (targetStat.isDirectory()) enqueue(entryPath);
+              } catch {
+                // inspectLink already records relevant link state without exposing raw errors.
+              }
+            }
+          }
           continue;
         }
         if (entry.isDirectory()) {

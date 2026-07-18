@@ -107,6 +107,27 @@ describe("scanInventory", () => {
     expect(snapshot.skills.filter((skill) => skill.name === "alpha")).toHaveLength(1);
   });
 
+  it("follows skill-directory links only when enabled and stops directory cycles", async () => {
+    const root = await makeFixture();
+    const linkRoot = path.join(root, "opt-in", "skills");
+    const target = path.join(root, "linked-target");
+    await Promise.all([mkdir(linkRoot, { recursive: true }), mkdir(target, { recursive: true })]);
+    await writeFile(path.join(target, "SKILL.md"), "---\nname: linked\n---\n");
+    await symlink(target, path.join(linkRoot, "linked"));
+    await symlink(linkRoot, path.join(target, "cycle"));
+
+    const defaultSnapshot = await scanInventory({ roots: [linkRoot], home: root });
+    expect(defaultSnapshot.skills).toHaveLength(0);
+
+    const followedSnapshot = await scanInventory({
+      roots: [linkRoot],
+      home: root,
+      followDirectoryLinks: true,
+    });
+    expect(followedSnapshot.skills.map(({ name }) => name)).toEqual(["linked"]);
+    expect(followedSnapshot.links).toHaveLength(2);
+  });
+
   it("bounds frontmatter reads and sanitizes parser errors", async () => {
     const root = await makeFixture();
     const hugeDirectory = path.join(root, ".codex", "skills", "huge");
