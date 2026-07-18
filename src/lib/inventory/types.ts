@@ -14,6 +14,19 @@ export type ScanMode = "official" | "full";
 export type OfficialSourceScope = "user" | "project" | "admin";
 export type OfficialSourceKind = "native" | "shared" | "compatibility";
 
+export interface OfficialSourceOwner {
+  id: string;
+  name: string;
+  type: "agent" | "shared";
+}
+
+export interface OfficialSharedSource {
+  id: "shared";
+  name: "공유 디렉터리";
+  globalPaths: string[];
+  projectPaths: string[];
+}
+
 export interface SkillSourceSighting {
   rootPath: string;
   path: string;

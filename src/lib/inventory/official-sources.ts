@@ -1,7 +1,9 @@
 import path from "node:path";
 import type {
   OfficialAgentSource,
+  OfficialSharedSource,
   OfficialSourceKind,
+  OfficialSourceOwner,
   OfficialSourceScope,
 } from "./types";
 
@@ -16,6 +18,7 @@ interface FixedGlobalRootDefinition {
   type: "fixed";
   displayPath: string;
   kind: OfficialSourceKind;
+  ownerId?: string;
   scope: "user" | "admin";
   resolve: (context: RegistryContext) => string[];
 }
@@ -25,6 +28,7 @@ interface PatternRootDefinition {
   displayPath: string;
   pattern: string;
   kind: OfficialSourceKind;
+  ownerId?: string;
   scope: "user" | "project";
   workspaceMarker?: boolean;
   discoverable?: boolean;
@@ -46,6 +50,7 @@ export interface ResolvedOfficialRootCandidate {
   scope: OfficialSourceScope;
   kinds: OfficialSourceKind[];
   agents: string[];
+  owner: OfficialSourceOwner;
 }
 
 export interface ResolvedOfficialPattern {
@@ -54,11 +59,13 @@ export interface ResolvedOfficialPattern {
   scope: "user" | "project";
   kinds: OfficialSourceKind[];
   agents: string[];
+  owner: OfficialSourceOwner;
   workspaceMarker: boolean;
 }
 
 export interface ResolvedOfficialRegistry {
   home: string;
+  shared: OfficialSharedSource;
   agents: OfficialAgentSource[];
   globalRoots: ResolvedOfficialRootCandidate[];
   globalPatterns: ResolvedOfficialPattern[];
@@ -69,6 +76,7 @@ export interface OfficialRootMatch {
   scope: "user" | "project" | "admin";
   kinds: OfficialSourceKind[];
   agents: string[];
+  owner: OfficialSourceOwner;
 }
 
 const KIND_ORDER: OfficialSourceKind[] = ["native", "shared", "compatibility"];
@@ -86,11 +94,16 @@ function resolveHome(home: string, relativePath: string): string {
   return path.resolve(home, relativePath);
 }
 
-function fixedHome(relativePath: string, kind: OfficialSourceKind): FixedGlobalRootDefinition {
+function fixedHome(
+  relativePath: string,
+  kind: OfficialSourceKind,
+  ownerId?: string,
+): FixedGlobalRootDefinition {
   return {
     type: "fixed",
     displayPath: `~/${relativePath}`,
     kind,
+    ownerId,
     scope: "user",
     resolve: ({ home }) => [resolveHome(home, relativePath)],
   };
@@ -101,11 +114,13 @@ function envHome(
   fallbackRelativePath: string,
   suffix: string,
   kind: OfficialSourceKind,
+  ownerId?: string,
 ): FixedGlobalRootDefinition {
   return {
     type: "fixed",
     displayPath: `$${variable}/${suffix} (기본 ~/${fallbackRelativePath}/${suffix})`,
     kind,
+    ownerId,
     scope: "user",
     resolve: ({ home, environment }) => [
       path.resolve(environment[variable] || resolveHome(home, fallbackRelativePath), suffix),
@@ -113,21 +128,31 @@ function envHome(
   };
 }
 
-function envOnly(variable: string, kind: OfficialSourceKind): FixedGlobalRootDefinition {
+function envOnly(
+  variable: string,
+  kind: OfficialSourceKind,
+  ownerId?: string,
+): FixedGlobalRootDefinition {
   return {
     type: "fixed",
     displayPath: `$${variable}`,
     kind,
+    ownerId,
     scope: "user",
     resolve: ({ environment }) => (environment[variable] ? [path.resolve(environment[variable])] : []),
   };
 }
 
-function xdgRoot(relativePath: string, kind: OfficialSourceKind): FixedGlobalRootDefinition {
+function xdgRoot(
+  relativePath: string,
+  kind: OfficialSourceKind,
+  ownerId?: string,
+): FixedGlobalRootDefinition {
   return {
     type: "fixed",
     displayPath: `$XDG_CONFIG_HOME/${relativePath} (기본 ~/.config/${relativePath})`,
     kind,
+    ownerId,
     scope: "user",
     resolve: ({ home, environment }) => [
       path.resolve(environment.XDG_CONFIG_HOME || resolveHome(home, ".config"), relativePath),
@@ -135,22 +160,32 @@ function xdgRoot(relativePath: string, kind: OfficialSourceKind): FixedGlobalRoo
   };
 }
 
-function absoluteRoot(rootPath: string, kind: OfficialSourceKind): FixedGlobalRootDefinition {
+function absoluteRoot(
+  rootPath: string,
+  kind: OfficialSourceKind,
+  ownerId?: string,
+): FixedGlobalRootDefinition {
   return {
     type: "fixed",
     displayPath: rootPath,
     kind,
+    ownerId,
     scope: "admin",
     resolve: () => [path.resolve(rootPath)],
   };
 }
 
-function globalPattern(pattern: string, kind: OfficialSourceKind): PatternRootDefinition {
+function globalPattern(
+  pattern: string,
+  kind: OfficialSourceKind,
+  ownerId?: string,
+): PatternRootDefinition {
   return {
     type: "pattern",
     displayPath: `~/${pattern}`,
     pattern,
     kind,
+    ownerId,
     scope: "user",
   };
 }
@@ -160,22 +195,26 @@ function projectRoot(
   kind: OfficialSourceKind,
   workspaceMarker = false,
   discoverable = true,
+  ownerId?: string,
 ): ProjectRootDefinition {
   return {
     type: "pattern",
     displayPath: `**/${pattern}`,
     pattern,
     kind,
+    ownerId,
     scope: "project",
     workspaceMarker,
     discoverable,
   };
 }
 
-const sharedUser = () => fixedHome(".agents/skills", "shared");
-const sharedProject = () => projectRoot(".agents/skills", "shared");
-const claudeUserCompatibility = () => fixedHome(".claude/skills", "compatibility");
-const claudeProjectCompatibility = () => projectRoot(".claude/skills", "compatibility");
+const sharedUser = () => fixedHome(".agents/skills", "shared", "shared");
+const sharedProject = () => projectRoot(".agents/skills", "shared", false, true, "shared");
+const claudeUserCompatibility = () =>
+  fixedHome(".claude/skills", "compatibility", "claude-code");
+const claudeProjectCompatibility = () =>
+  projectRoot(".claude/skills", "compatibility", false, true, "claude-code");
 
 export const OFFICIAL_AGENT_DEFINITIONS: OfficialAgentDefinition[] = [
   {
@@ -216,11 +255,11 @@ export const OFFICIAL_AGENT_DEFINITIONS: OfficialAgentDefinition[] = [
     name: "Sakana Fugu",
     documentationUrl: "https://github.com/SakanaAI/fugu/blob/main/docs/commands_details.md",
     globalRoots: [
-      fixedHome(".agents/skills", "compatibility"),
-      envHome("CODEX_HOME", ".codex", "skills", "compatibility"),
-      absoluteRoot("/etc/codex/skills", "compatibility"),
+      fixedHome(".agents/skills", "compatibility", "shared"),
+      envHome("CODEX_HOME", ".codex", "skills", "compatibility", "codex"),
+      absoluteRoot("/etc/codex/skills", "compatibility", "codex"),
     ],
-    projectRoots: [projectRoot(".agents/skills", "compatibility")],
+    projectRoots: [projectRoot(".agents/skills", "compatibility", false, true, "shared")],
   },
   {
     id: "hermes",
@@ -269,13 +308,13 @@ export const OFFICIAL_AGENT_DEFINITIONS: OfficialAgentDefinition[] = [
       fixedHome(".cursor/skills", "native"),
       sharedUser(),
       claudeUserCompatibility(),
-      fixedHome(".codex/skills", "compatibility"),
+      fixedHome(".codex/skills", "compatibility", "codex"),
     ],
     projectRoots: [
       projectRoot(".cursor/skills", "native"),
       sharedProject(),
       claudeProjectCompatibility(),
-      projectRoot(".codex/skills", "compatibility"),
+      projectRoot(".codex/skills", "compatibility", false, true, "codex"),
     ],
   },
   {
@@ -286,13 +325,13 @@ export const OFFICIAL_AGENT_DEFINITIONS: OfficialAgentDefinition[] = [
       fixedHome(".roo/skills", "native"),
       globalPattern(".roo/skills-*", "native"),
       sharedUser(),
-      globalPattern(".agents/skills-*", "shared"),
+      globalPattern(".agents/skills-*", "shared", "roo"),
     ],
     projectRoots: [
       projectRoot(".roo/skills", "native"),
       projectRoot(".roo/skills-*", "native"),
       sharedProject(),
-      projectRoot(".agents/skills-*", "shared"),
+      projectRoot(".agents/skills-*", "shared", false, true, "roo"),
     ],
   },
   {
@@ -327,7 +366,7 @@ export const OFFICIAL_AGENT_DEFINITIONS: OfficialAgentDefinition[] = [
     globalRoots: [fixedHome(".cline/skills", "native")],
     projectRoots: [
       projectRoot(".cline/skills", "native"),
-      projectRoot(".clinerules/skills", "compatibility"),
+      projectRoot(".clinerules/skills", "compatibility", false, true, "cline"),
       claudeProjectCompatibility(),
     ],
   },
@@ -367,7 +406,10 @@ export const OFFICIAL_AGENT_DEFINITIONS: OfficialAgentDefinition[] = [
     name: "Factory Droid",
     documentationUrl: "https://docs.factory.ai/cli/configuration/skills",
     globalRoots: [fixedHome(".factory/skills", "native")],
-    projectRoots: [projectRoot(".factory/skills", "native"), projectRoot(".agent/skills", "compatibility")],
+    projectRoots: [
+      projectRoot(".factory/skills", "native"),
+      projectRoot(".agent/skills", "compatibility", false, true, "antigravity"),
+    ],
   },
   {
     id: "kimi",
@@ -397,7 +439,7 @@ export const OFFICIAL_AGENT_DEFINITIONS: OfficialAgentDefinition[] = [
       sharedProject(),
       projectRoot(".crush/skills", "native"),
       claudeProjectCompatibility(),
-      projectRoot(".cursor/skills", "compatibility"),
+      projectRoot(".cursor/skills", "compatibility", false, true, "cursor"),
     ],
   },
   {
@@ -415,25 +457,25 @@ export const OFFICIAL_AGENT_DEFINITIONS: OfficialAgentDefinition[] = [
       sharedUser(),
       fixedHome(".warp/skills", "native"),
       claudeUserCompatibility(),
-      fixedHome(".codex/skills", "compatibility"),
-      fixedHome(".cursor/skills", "compatibility"),
-      fixedHome(".gemini/skills", "compatibility"),
-      fixedHome(".copilot/skills", "compatibility"),
-      fixedHome(".factory/skills", "compatibility"),
-      fixedHome(".github/skills", "compatibility"),
-      fixedHome(".opencode/skills", "compatibility"),
+      fixedHome(".codex/skills", "compatibility", "codex"),
+      fixedHome(".cursor/skills", "compatibility", "cursor"),
+      fixedHome(".gemini/skills", "compatibility", "gemini-cli"),
+      fixedHome(".copilot/skills", "compatibility", "github-copilot-cli"),
+      fixedHome(".factory/skills", "compatibility", "factory-droid"),
+      fixedHome(".github/skills", "compatibility", "github-copilot-cli"),
+      fixedHome(".opencode/skills", "compatibility", "opencode"),
     ],
     projectRoots: [
       sharedProject(),
       projectRoot(".warp/skills", "native"),
       claudeProjectCompatibility(),
-      projectRoot(".codex/skills", "compatibility"),
-      projectRoot(".cursor/skills", "compatibility"),
-      projectRoot(".gemini/skills", "compatibility"),
-      projectRoot(".copilot/skills", "compatibility"),
-      projectRoot(".factory/skills", "compatibility"),
-      projectRoot(".github/skills", "compatibility"),
-      projectRoot(".opencode/skills", "compatibility"),
+      projectRoot(".codex/skills", "compatibility", false, true, "codex"),
+      projectRoot(".cursor/skills", "compatibility", false, true, "cursor"),
+      projectRoot(".gemini/skills", "compatibility", false, true, "gemini-cli"),
+      projectRoot(".copilot/skills", "compatibility", false, true, "github-copilot-cli"),
+      projectRoot(".factory/skills", "compatibility", false, true, "factory-droid"),
+      projectRoot(".github/skills", "compatibility", false, true, "github-copilot-cli"),
+      projectRoot(".opencode/skills", "compatibility", false, true, "opencode"),
     ],
   },
   {
@@ -458,16 +500,16 @@ export const OFFICIAL_AGENT_DEFINITIONS: OfficialAgentDefinition[] = [
       fixedHome(".config/mimocode/skills", "native"),
       claudeUserCompatibility(),
       sharedUser(),
-      fixedHome(".codex/skills", "compatibility"),
-      fixedHome(".opencode/skills", "compatibility"),
+      fixedHome(".codex/skills", "compatibility", "codex"),
+      fixedHome(".opencode/skills", "compatibility", "opencode"),
     ],
     projectRoots: [
       projectRoot(".mimocode/skills", "native"),
       projectRoot(".mimocode/skill", "native"),
       claudeProjectCompatibility(),
       sharedProject(),
-      projectRoot(".codex/skills", "compatibility"),
-      projectRoot(".opencode/skills", "compatibility"),
+      projectRoot(".codex/skills", "compatibility", false, true, "codex"),
+      projectRoot(".opencode/skills", "compatibility", false, true, "opencode"),
     ],
   },
   {
@@ -479,11 +521,20 @@ export const OFFICIAL_AGENT_DEFINITIONS: OfficialAgentDefinition[] = [
   },
 ];
 
-function addRelation<T extends { kinds: OfficialSourceKind[]; agents: string[] }>(
-  target: T,
-  kind: OfficialSourceKind,
-  agentName: string,
-): void {
+const SHARED_OWNER: OfficialSourceOwner = {
+  id: "shared",
+  name: "공유 디렉터리",
+  type: "shared",
+};
+
+function addRelation<
+  T extends { kinds: OfficialSourceKind[]; agents: string[]; owner: OfficialSourceOwner },
+>(target: T, kind: OfficialSourceKind, agentName: string, owner: OfficialSourceOwner): void {
+  if (target.owner.id !== owner.id) {
+    throw new Error(
+      `공식 Skill root 소유권 충돌: ${target.owner.id} / ${owner.id}`,
+    );
+  }
   target.kinds = sortKinds([...target.kinds, kind]);
   target.agents = unique([...target.agents, agentName]);
 }
@@ -511,29 +562,65 @@ export function resolveOfficialRegistry(
   environment: Environment = process.env,
 ): ResolvedOfficialRegistry {
   const context = { home: path.resolve(home), environment };
+  const definitionsById = new Map(
+    OFFICIAL_AGENT_DEFINITIONS.map((definition) => [definition.id, definition]),
+  );
   const globalRoots = new Map<string, ResolvedOfficialRootCandidate>();
   const globalPatterns = new Map<string, ResolvedOfficialPattern>();
   const projectPatterns = new Map<string, ResolvedOfficialPattern>();
+  const ownerGlobalPaths = new Map<string, string[]>();
+  const ownerProjectPaths = new Map<string, string[]>();
 
-  const agents = OFFICIAL_AGENT_DEFINITIONS.map<OfficialAgentSource>((definition) => {
-    const globalPaths: string[] = [];
+  const ownerForId = (ownerId: string): OfficialSourceOwner => {
+    if (ownerId === "shared") return SHARED_OWNER;
+    const definition = definitionsById.get(ownerId);
+    if (!definition) throw new Error(`알 수 없는 공식 Skill root 소유자: ${ownerId}`);
+    return { id: definition.id, name: definition.name, type: "agent" };
+  };
+  const relationOwner = (
+    root: GlobalRootDefinition | ProjectRootDefinition,
+    declaringAgentId: string,
+  ): OfficialSourceOwner => {
+    const ownerId =
+      root.ownerId ??
+      (root.kind === "shared"
+        ? "shared"
+        : root.kind === "native"
+          ? declaringAgentId
+          : undefined);
+    if (!ownerId) {
+      throw new Error(`호환 Skill root에 ownerId가 없습니다: ${root.displayPath}`);
+    }
+    return ownerForId(ownerId);
+  };
+  const addOwnedPath = (target: Map<string, string[]>, ownerId: string, value: string): void => {
+    target.set(ownerId, unique([...(target.get(ownerId) ?? []), value]));
+  };
+
+  for (const definition of OFFICIAL_AGENT_DEFINITIONS) {
     for (const root of definition.globalRoots) {
+      const owner = relationOwner(root, definition.id);
       if (root.type === "fixed") {
         for (const resolvedPath of root.resolve(context)) {
           const normalizedPath = path.resolve(resolvedPath);
-          globalPaths.push(normalizedPath);
+          if (owner.type === "shared" || owner.id === definition.id) {
+            addOwnedPath(ownerGlobalPaths, owner.id, normalizedPath);
+          }
           const key = `${root.scope}:${normalizedPath}`;
           const existing = globalRoots.get(key) ?? {
             path: normalizedPath,
             scope: root.scope,
             kinds: [],
             agents: [],
+            owner,
           };
-          addRelation(existing, root.kind, definition.name);
+          addRelation(existing, root.kind, definition.name, owner);
           globalRoots.set(key, existing);
         }
       } else {
-        globalPaths.push(root.displayPath);
+        if (owner.type === "shared" || owner.id === definition.id) {
+          addOwnedPath(ownerGlobalPaths, owner.id, root.displayPath);
+        }
         const key = `${root.scope}:${root.pattern}`;
         const existing = globalPatterns.get(key) ?? {
           displayPath: root.displayPath,
@@ -541,41 +628,51 @@ export function resolveOfficialRegistry(
           scope: root.scope,
           kinds: [],
           agents: [],
+          owner,
           workspaceMarker: false,
         };
-        addRelation(existing, root.kind, definition.name);
+        addRelation(existing, root.kind, definition.name, owner);
         globalPatterns.set(key, existing);
       }
     }
 
-    const projectPaths: string[] = [];
     for (const root of definition.projectRoots) {
-      projectPaths.push(root.displayPath);
+      const owner = relationOwner(root, definition.id);
+      if (owner.type === "shared" || owner.id === definition.id) {
+        addOwnedPath(ownerProjectPaths, owner.id, root.displayPath);
+      }
       if (root.discoverable === false) continue;
       const key = `${root.pattern}:${root.workspaceMarker === true}`;
       const existing = projectPatterns.get(key) ?? {
         displayPath: root.displayPath,
         pattern: root.pattern,
-        scope: "project",
+        scope: "project" as const,
         kinds: [],
         agents: [],
+        owner,
         workspaceMarker: root.workspaceMarker === true,
       };
-      addRelation(existing, root.kind, definition.name);
+      addRelation(existing, root.kind, definition.name, owner);
       projectPatterns.set(key, existing);
     }
+  }
 
-    return {
-      id: definition.id,
-      name: definition.name,
-      documentationUrl: definition.documentationUrl,
-      globalPaths: unique(globalPaths),
-      projectPaths: unique(projectPaths),
-    };
-  });
+  const agents = OFFICIAL_AGENT_DEFINITIONS.map<OfficialAgentSource>((definition) => ({
+    id: definition.id,
+    name: definition.name,
+    documentationUrl: definition.documentationUrl,
+    globalPaths: ownerGlobalPaths.get(definition.id) ?? [],
+    projectPaths: ownerProjectPaths.get(definition.id) ?? [],
+  })).filter(({ globalPaths, projectPaths }) => globalPaths.length + projectPaths.length > 0);
 
   return {
     home: context.home,
+    shared: {
+      id: "shared",
+      name: "공유 디렉터리",
+      globalPaths: ownerGlobalPaths.get("shared") ?? [],
+      projectPaths: ownerProjectPaths.get("shared") ?? [],
+    },
     agents,
     globalRoots: [...globalRoots.values()],
     globalPatterns: [...globalPatterns.values()],
@@ -583,8 +680,14 @@ export function resolveOfficialRegistry(
   };
 }
 
-function mergeMatches(matches: Array<ResolvedOfficialRootCandidate | ResolvedOfficialPattern>): OfficialRootMatch | undefined {
+function mergeMatches(
+  matches: Array<ResolvedOfficialRootCandidate | ResolvedOfficialPattern>,
+): OfficialRootMatch | undefined {
   if (matches.length === 0) return undefined;
+  const owner = matches[0]!.owner;
+  if (matches.some((match) => match.owner.id !== owner.id)) {
+    throw new Error(`공식 Skill root match 소유권 충돌: ${matches.map((match) => match.owner.id).join(" / ")}`);
+  }
   const scope = matches.some((match) => match.scope === "admin")
     ? "admin"
     : matches.some((match) => match.scope === "user")
@@ -594,6 +697,7 @@ function mergeMatches(matches: Array<ResolvedOfficialRootCandidate | ResolvedOff
     scope,
     kinds: sortKinds(matches.flatMap(({ kinds }) => kinds)),
     agents: unique(matches.flatMap(({ agents }) => agents)),
+    owner,
   };
 }
 
