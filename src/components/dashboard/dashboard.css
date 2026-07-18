@@ -145,13 +145,16 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
 .taxonomy-group-list, .project-group-list { display: grid; }
 .agent-skill-group, .project-skill-group { border-bottom: 1px solid var(--ink); }
 .agent-skill-group:not([open]) > .taxonomy-skill-list, .project-skill-group:not([open]) > .taxonomy-skill-list { display: none; }
-.agent-skill-group > summary, .project-skill-group > summary { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 1rem; align-items: start; padding: 1rem 0 0.75rem; cursor: pointer; list-style: none; }
+.agent-skill-group > summary, .project-skill-group > summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: start; padding: 1rem 0 0.75rem; cursor: pointer; list-style: none; }
 .agent-skill-group > summary::-webkit-details-marker, .project-skill-group > summary::-webkit-details-marker { display: none; }
 .agent-skill-group > summary::after, .project-skill-group > summary::after { content: "+"; color: var(--accent); font: 700 1rem/1 var(--mono); }
 .agent-skill-group[open] > summary::after, .project-skill-group[open] > summary::after { content: "−"; }
 .agent-skill-group > summary:focus-visible, .project-skill-group > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-.agent-skill-group > summary h3, .project-skill-group > summary h3 { font: 700 1.25rem/1.1 var(--display); overflow-wrap: anywhere; }
-.agent-skill-group > summary span, .project-skill-group > summary span { color: var(--accent); font: 700 0.64rem/1 var(--mono); }
+.agent-skill-group > summary h3, .project-skill-group > summary h3 { min-width: 0; display: grid; gap: 1rem; align-items: baseline; font: 700 1.25rem/1.1 var(--display); overflow-wrap: anywhere; }
+.agent-skill-group > summary h3 { grid-template-columns: minmax(0, 1fr) auto; }
+.project-skill-group > summary h3 { grid-template-columns: minmax(8rem, 0.35fr) minmax(0, 1fr) auto; }
+.agent-skill-group > summary h3 > span, .project-skill-group > summary h3 > span { min-width: 0; }
+.agent-skill-group > summary h3 > small, .project-skill-group > summary h3 > small { color: var(--accent); font: 700 0.64rem/1 var(--mono); }
 .agent-skill-group.is-shared-owner { box-shadow: inset 3px 0 var(--accent); padding-left: 0.8rem; }
 .taxonomy-skill-list, .taxonomy-alias-list { margin: 0; padding: 0; list-style: none; }
 .taxonomy-skill-list > li { display: grid; grid-template-columns: minmax(12rem, 0.8fr) minmax(0, 1.2fr); gap: 1rem; padding: 0.85rem 0; border-top: 1px solid var(--line); transition: background 120ms; }
@@ -164,9 +167,8 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
 .taxonomy-skill-list button span { color: var(--muted); line-height: 1.4; }
 .taxonomy-alias-list { display: grid; align-content: start; gap: 0.35rem; }
 .taxonomy-alias-list li { min-width: 0; }
-.taxonomy-alias-list code, .project-skill-group > summary code { overflow-wrap: anywhere; color: #3f4b5f; font: 0.63rem/1.4 var(--mono); }
-.project-skill-group > summary > div { min-width: 0; display: grid; gap: 0.35rem; }
-.project-skill-group > summary span { white-space: nowrap; }
+.taxonomy-alias-list code, .project-skill-group > summary code { min-width: 0; overflow-wrap: anywhere; color: #3f4b5f; font: 0.63rem/1.4 var(--mono); }
+.project-skill-group > summary h3 > small { white-space: nowrap; }
 .project-skill-group .taxonomy-alias-list { grid-column: 2; }
 .project-skill-group .taxonomy-alias-list li { display: grid; grid-template-columns: minmax(6rem, 0.35fr) minmax(0, 1fr); gap: 0.7rem; }
 .project-skill-group .taxonomy-alias-list strong { font-size: 0.68rem; }
@@ -351,8 +353,8 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
   td.skill-date::before { content: "수정"; }
   .skill-source strong, .skill-source span, .skill-source code { grid-column: 2; white-space: normal; overflow-wrap: anywhere; }
   .taxonomy-skill-list > li { grid-template-columns: 1fr; gap: 0.65rem; }
-  .agent-skill-group > summary, .project-skill-group > summary { grid-template-columns: minmax(0, 1fr) auto; }
-  .agent-skill-group > summary > span, .project-skill-group > summary > span { grid-column: 1; white-space: normal; }
+  .agent-skill-group > summary h3, .project-skill-group > summary h3 { grid-template-columns: 1fr; gap: 0.35rem; }
+  .project-skill-group > summary h3 > small { white-space: normal; }
   .agent-skill-group > summary::after, .project-skill-group > summary::after { grid-column: 2; grid-row: 1; }
   .project-skill-group .taxonomy-alias-list { grid-column: 1; }
   .project-skill-group .taxonomy-alias-list li { grid-template-columns: 1fr; gap: 0.2rem; }

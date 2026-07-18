@@ -32,8 +32,10 @@ export function AgentSkillsPanel(props: Props) {
                 classList={{ "is-shared-owner": group.owner.type === "shared" }}
               >
                 <summary role="button" aria-label={`${group.owner.name} Skill 목록 토글`}>
-                  <h3>{group.owner.name}</h3>
-                  <span>{group.skills.length.toLocaleString("ko-KR")} SKILLS</span>
+                  <h3 aria-label={group.owner.name}>
+                    <span>{group.owner.name}</span>
+                    <small>{group.skills.length.toLocaleString("ko-KR")} SKILLS</small>
+                  </h3>
                 </summary>
                 <ul class="taxonomy-skill-list">
                   <For each={group.skills}>

@@ -101,7 +101,13 @@ export function inferProjectDirectory(
     if (markerIndex > 1) return parts.slice(0, markerIndex).join("/");
     if (parts.at(-1) === "skills" && parts.length > 2) return parts.slice(0, -1).join("/");
   }
-  return undefined;
+
+  const normalizedConfigRoot = configRoot?.replace(/\/+$/, "");
+  if (!normalizedConfigRoot?.startsWith("/")) return undefined;
+  const separatorIndex = normalizedConfigRoot.lastIndexOf("/");
+  if (separatorIndex <= 0) return undefined;
+  const parent = normalizedConfigRoot.slice(0, separatorIndex);
+  return parent === "/" ? undefined : parent;
 }
 
 export function createAgentSkillProjection(records: SkillRecord[]): AgentSkillProjection {

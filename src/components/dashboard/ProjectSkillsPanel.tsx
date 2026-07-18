@@ -35,14 +35,14 @@ export function ProjectSkillsPanel(props: Props) {
                   role="button"
                   aria-label={`${pathLeaf(group.directory)} 프로젝트 Skill 목록 토글`}
                 >
-                  <div>
-                    <h3>{pathLeaf(group.directory)}</h3>
+                  <h3 aria-label={pathLeaf(group.directory)}>
+                    <span>{pathLeaf(group.directory)}</span>
                     <code>{group.directory}</code>
-                  </div>
-                  <span>
-                    {group.skills.length.toLocaleString("ko-KR")} SKILLS ·{" "}
-                    {group.ownerCount.toLocaleString("ko-KR")} AGENTS
-                  </span>
+                    <small>
+                      {group.skills.length.toLocaleString("ko-KR")} SKILLS ·{" "}
+                      {group.ownerCount.toLocaleString("ko-KR")} AGENTS
+                    </small>
+                  </h3>
                 </summary>
                 <ul class="taxonomy-skill-list">
                   <For each={group.skills}>

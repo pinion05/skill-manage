@@ -374,6 +374,8 @@ describe("SkillDashboard", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "프로젝트 2" }));
     const projectToggle = screen.getByRole("button", { name: "app 프로젝트 Skill 목록 토글" });
+    expect(projectToggle.querySelector(":scope > div")).toBeNull();
+    expect(projectToggle.querySelector(":scope > h3")).not.toBeNull();
     const project = projectToggle.closest("details")!;
     const projectSkillTrigger = within(project).getByRole("button", {
       name: /project-only.*상세 보기/,

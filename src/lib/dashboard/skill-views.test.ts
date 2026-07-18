@@ -84,6 +84,32 @@ describe("createAgentSkillProjection", () => {
     expect(result.groups[0]?.owner.id).toBe("shared");
     expect(result.groups[0]?.skills[0]?.aliases).toHaveLength(2);
   });
+
+  it("counts one physical Skill across owners and full-mode aliases", () => {
+    const first = skill({
+      id: "first-path",
+      sourceSightings: [
+        sighting("user", "claude-code", "Claude Code", "/Users/me/.claude/skills"),
+        sighting("admin", "shared", "공유 디렉터리", "/Users/me/.agents/skills", "shared"),
+      ],
+    });
+    const second = skill({
+      ...first,
+      id: "second-path",
+      path: "/Users/me/.local/skills/alpha/SKILL.md",
+      sourceSightings: [],
+      agent: "Local Agent",
+    });
+
+    const result = createAgentSkillProjection([first, second]);
+
+    expect(result.skillCount).toBe(1);
+    expect(result.groups.map(({ owner }) => owner.name)).toEqual([
+      "공유 디렉터리",
+      "Claude Code",
+      "Local Agent",
+    ]);
+  });
 });
 
 describe("createProjectSkillProjection", () => {
@@ -101,6 +127,24 @@ describe("createProjectSkillProjection", () => {
     expect(result.groups[0]?.directory).toBe("/Users/me/dev/app");
     expect(result.groups[0]?.skills).toHaveLength(1);
     expect(result.groups[0]?.skills[0]?.owners.map(({ name }) => name)).toEqual(["Claude Code", "Cursor"]);
+  });
+
+  it("keeps one physical Skill once in each distinct project", () => {
+    const result = createProjectSkillProjection([
+      skill({
+        sourceSightings: [
+          sighting("project", "claude-code", "Claude Code", "/Users/me/dev/alpha/.claude/skills"),
+          sighting("project", "claude-code", "Claude Code", "/Users/me/dev/beta/.claude/skills"),
+        ],
+      }),
+    ]);
+
+    expect(result.skillCount).toBe(2);
+    expect(result.groups.map(({ directory }) => directory)).toEqual([
+      "/Users/me/dev/alpha",
+      "/Users/me/dev/beta",
+    ]);
+    expect(result.groups.every(({ skills }) => skills.length === 1)).toBe(true);
   });
 });
 
@@ -121,6 +165,27 @@ describe("inferProjectDirectory", () => {
       sourceSightings: [],
     });
     expect(createAgentSkillProjection([project]).skillCount).toBe(0);
+    expect(createProjectSkillProjection([project]).groups[0]?.directory).toBe("/Users/me/dev/app");
+  });
+
+  it("falls back to a bounded config-root parent for markerless projects", () => {
+    expect(
+      inferProjectDirectory(
+        "/Users/me/dev/app/custom-skill-root",
+        "/Users/me/dev/app/tool-config",
+      ),
+    ).toBe("/Users/me/dev/app");
+    expect(inferProjectDirectory("/custom/root", "/")).toBeUndefined();
+    expect(inferProjectDirectory("/custom/root", "/agent")).toBeUndefined();
+    expect(inferProjectDirectory("", "")).toBeUndefined();
+
+    const project = skill({
+      id: "markerless-project",
+      kind: "project/source-local",
+      skillsRoot: "/Users/me/dev/app/custom-skill-root",
+      configRoot: "/Users/me/dev/app/tool-config",
+      sourceSightings: [],
+    });
     expect(createProjectSkillProjection([project]).groups[0]?.directory).toBe("/Users/me/dev/app");
   });
 });
