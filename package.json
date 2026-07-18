@@ -1,0 +1,32 @@
+{
+  "name": "skill-manage",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "start": "HOST=127.0.0.1 node ./dist/server/entry.mjs",
+    "check": "astro check",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "verify": "npm run test && npm run check && npm run build"
+  },
+  "dependencies": {
+    "@astrojs/node": "11.0.2",
+    "@astrojs/solid-js": "7.0.1",
+    "astro": "7.1.1",
+    "gray-matter": "4.0.3",
+    "marked": "18.0.6",
+    "sanitize-html": "2.17.6",
+    "solid-js": "1.9.14"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.9",
+    "@types/node": "26.1.1",
+    "@types/sanitize-html": "2.16.1",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
+  }
+}

@@ -1,0 +1,59 @@
+@layer reset, base;
+
+@layer reset {
+  *, *::before, *::after { box-sizing: border-box; }
+  html { color-scheme: light; }
+  body, h1, h2, h3, p { margin: 0; }
+  button, input, select { font: inherit; }
+  button { color: inherit; }
+}
+
+@layer base {
+  :root {
+    --paper: #edf0f2;
+    --surface: #f8fafb;
+    --surface-strong: #ffffff;
+    --ink: #152239;
+    --muted: #667184;
+    --line: #cbd2da;
+    --line-strong: #9ea9b7;
+    --accent: #315acb;
+    --accent-soft: #e4eaff;
+    --danger: #b83b4a;
+    --danger-soft: #f9e8ea;
+    --success: #16715c;
+    --success-soft: #dff2ec;
+    --warning: #a56111;
+    --mono: "SFMono-Regular", "Cascadia Code", "Roboto Mono", monospace;
+    --sans: "Avenir Next", Avenir, ui-sans-serif, system-ui, sans-serif;
+    --display: "Avenir Next Condensed", "Arial Narrow", var(--sans);
+    --shadow-panel: -18px 0 50px rgb(21 34 57 / 0.14);
+  }
+
+  html { min-width: 320px; background: var(--paper); }
+  body {
+    min-height: 100vh;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  button, a, input, select { -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 72%, white); outline-offset: 2px; }
+  ::selection { background: var(--accent); color: white; }
+
+  .boot-shell {
+    min-height: 100vh;
+    display: grid;
+    align-content: center;
+    gap: 0.75rem;
+    padding: clamp(1.5rem, 6vw, 6rem);
+  }
+  .boot-kicker { color: var(--accent); font: 700 0.72rem/1 var(--mono); letter-spacing: 0.16em; }
+  .boot-shell h1 { font: 700 clamp(3.5rem, 10vw, 8rem)/0.82 var(--display); letter-spacing: -0.06em; }
+  .boot-shell > p:last-child { color: var(--muted); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
