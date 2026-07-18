@@ -1,6 +1,6 @@
 import { readSkillContent } from "./markdown";
-import { scanInventory } from "./scanner";
-import type { InventorySnapshot, SkillContent, SkillRecord } from "./types";
+import { scanInventoryForMode } from "./scan-mode";
+import type { InventorySnapshot, ScanMode, SkillContent, SkillRecord } from "./types";
 
 export class SkillNotFoundError extends Error {
   constructor(id: string) {
@@ -10,44 +10,47 @@ export class SkillNotFoundError extends Error {
 }
 
 export interface InventoryStoreDependencies {
-  scan?: () => Promise<InventorySnapshot>;
+  scan?: (mode: ScanMode) => Promise<InventorySnapshot>;
   loadContent?: (record: SkillRecord) => Promise<SkillContent>;
 }
 
 export interface InventoryStore {
-  getInventory: () => Promise<InventorySnapshot>;
-  refreshInventory: () => Promise<InventorySnapshot>;
-  getSkillContent: (id: string) => Promise<SkillContent>;
+  getInventory: (mode?: ScanMode) => Promise<InventorySnapshot>;
+  refreshInventory: (mode?: ScanMode) => Promise<InventorySnapshot>;
+  getSkillContent: (id: string, mode?: ScanMode) => Promise<SkillContent>;
 }
 
 export function createInventoryStore(
   dependencies: InventoryStoreDependencies = {},
 ): InventoryStore {
-  const scan = dependencies.scan ?? (() => scanInventory());
+  const scan = dependencies.scan ?? scanInventoryForMode;
   const loadContent = dependencies.loadContent ?? readSkillContent;
-  let snapshot: InventorySnapshot | undefined;
-  let inFlight: Promise<InventorySnapshot> | undefined;
+  const snapshots = new Map<ScanMode, InventorySnapshot>();
+  const inFlight = new Map<ScanMode, Promise<InventorySnapshot>>();
 
-  const runScan = (force: boolean): Promise<InventorySnapshot> => {
-    if (inFlight) return inFlight;
-    if (!force && snapshot) return Promise.resolve(snapshot);
+  const runScan = (mode: ScanMode, force: boolean): Promise<InventorySnapshot> => {
+    const pending = inFlight.get(mode);
+    if (pending) return pending;
+    const cached = snapshots.get(mode);
+    if (!force && cached) return Promise.resolve(cached);
 
-    inFlight = scan()
+    const request = scan(mode)
       .then((nextSnapshot) => {
-        snapshot = nextSnapshot;
+        snapshots.set(mode, nextSnapshot);
         return nextSnapshot;
       })
       .finally(() => {
-        inFlight = undefined;
+        if (inFlight.get(mode) === request) inFlight.delete(mode);
       });
-    return inFlight;
+    inFlight.set(mode, request);
+    return request;
   };
 
   return {
-    getInventory: () => runScan(false),
-    refreshInventory: () => runScan(true),
-    getSkillContent: async (id: string) => {
-      const current = await runScan(false);
+    getInventory: (mode = "official") => runScan(mode, false),
+    refreshInventory: (mode = "official") => runScan(mode, true),
+    getSkillContent: async (id: string, mode = "official") => {
+      const current = await runScan(mode, false);
       const record = current.skills.find((skill) => skill.id === id);
       if (!record) throw new SkillNotFoundError(id);
       return loadContent(record);

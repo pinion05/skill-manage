@@ -1,10 +1,24 @@
 import type { APIRoute } from "astro";
 import { InvalidSkillFileError } from "../../../lib/inventory/markdown";
+import { InvalidScanModeError, parseScanMode } from "../../../lib/inventory/scan-mode";
 import { inventoryStore, SkillNotFoundError } from "../../../lib/inventory/store";
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ url }) => {
+  let mode;
+  try {
+    mode = parseScanMode(url.searchParams.get("mode"));
+  } catch (error) {
+    if (error instanceof InvalidScanModeError) {
+      return Response.json(
+        { error: "검색 범위는 official 또는 full이어야 합니다." },
+        { status: 400, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+    throw error;
+  }
+
   const id = url.searchParams.get("id")?.trim();
   if (!id) {
     return Response.json(
@@ -14,7 +28,7 @@ export const GET: APIRoute = async ({ url }) => {
   }
 
   try {
-    const content = await inventoryStore.getSkillContent(id);
+    const content = await inventoryStore.getSkillContent(id, mode);
     return Response.json(content, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     if (error instanceof SkillNotFoundError) {
