@@ -162,6 +162,9 @@ describe("SkillDashboard", () => {
     render(() => <SkillDashboard />);
 
     const tab = await screen.findByRole("button", { name: "중복 설치 1" });
+    fireEvent.input(screen.getByRole("searchbox"), { target: { value: "필터에 없는 이름" } });
+    expect(screen.getByText("조건에 맞는 skill이 없습니다.")).toBeInTheDocument();
+    expect(tab).toHaveAccessibleName("중복 설치 1");
     fireEvent.click(tab);
     expect(screen.getByRole("heading", { name: "Alpha" })).toBeInTheDocument();
     expect(screen.getByText("2곳 설치")).toBeInTheDocument();
@@ -169,7 +172,7 @@ describe("SkillDashboard", () => {
     expect(screen.getByText("/Users/me/.claude/skills/alpha/SKILL.md")).toBeInTheDocument();
 
     const trigger = screen.getByRole("button", {
-      name: "alpha · Claude Code · /Users/me/.claude/skills/alpha/SKILL.md 상세 보기",
+      name: "alpha · Claude Code · 사용자 설정 · /Users/me/.claude · /Users/me/.claude/skills/alpha/SKILL.md 상세 보기",
     });
     fireEvent.click(trigger);
     const dialog = await screen.findByRole("dialog");
@@ -184,6 +187,19 @@ describe("SkillDashboard", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "중복 설치 0" }));
     expect(screen.getByText("중복 설치된 skill이 없습니다.")).toBeInTheDocument();
+  });
+
+  it("updates duplicate groups after a manual filesystem refresh", async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) =>
+      jsonResponse(init?.method === "POST" ? duplicateInventory() : inventory()),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    render(() => <SkillDashboard />);
+
+    expect(await screen.findByRole("button", { name: "중복 설치 0" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "파일시스템 재검색" }));
+    expect(await screen.findByRole("button", { name: "중복 설치 1" })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith("/api/inventory/refresh", { method: "POST" });
   });
 
   it("shows scan-error samples and link aggregates by configuration root", async () => {

@@ -41,6 +41,20 @@ describe("groupDuplicateSkills", () => {
     ]);
   });
 
+  it("uses code-point tie-breakers when base and numeric collation considers values equal", () => {
+    const records = [
+      skill({ id: "accent-2", name: "résumé", path: "/accent/2/SKILL.md" }),
+      skill({ id: "accent-1", name: "RÉSUMÉ", path: "/accent/1/SKILL.md" }),
+      skill({ id: "plain-2", name: "resume", path: "/plain/2/SKILL.md" }),
+      skill({ id: "plain-02", name: "RESUME", path: "/plain/02/SKILL.md" }),
+    ];
+
+    const groups = groupDuplicateSkills(records);
+
+    expect(groups.map((group) => group.key)).toEqual(["resume", "résumé"]);
+    expect(groups[0]!.installs.map((record) => record.id)).toEqual(["plain-02", "plain-2"]);
+  });
+
   it("sorts groups by name and does not mutate input order", () => {
     const records = [
       skill({ id: "z2", name: "zeta", path: "/z/2/SKILL.md" }),

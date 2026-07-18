@@ -11,6 +11,12 @@ const collator = new Intl.Collator(["ko", "en"], {
   sensitivity: "base",
 });
 
+function compareText(left: string, right: string): number {
+  const comparison = collator.compare(left, right);
+  if (comparison !== 0) return comparison;
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 export function normalizeSkillName(name: string): string {
   return name.normalize("NFKC").trim().toLocaleLowerCase();
 }
@@ -31,7 +37,7 @@ export function groupDuplicateSkills(records: SkillRecord[]): DuplicateSkillGrou
     .map(([key, recordsForName]) => ({
       key,
       name: recordsForName[0]!.name.trim() || key,
-      installs: recordsForName.toSorted((left, right) => collator.compare(left.path, right.path)),
+      installs: recordsForName.toSorted((left, right) => compareText(left.path, right.path)),
     }))
-    .toSorted((left, right) => collator.compare(left.key, right.key));
+    .toSorted((left, right) => compareText(left.key, right.key));
 }

@@ -48,7 +48,7 @@ export function DuplicateSkillsPanel(props: Props) {
                       <li>
                         <button
                           type="button"
-                          aria-label={`${skill.name} · ${skill.agent} · ${skill.path} 상세 보기`}
+                          aria-label={`${skill.name} · ${skill.agent} · ${kindLabel(skill.kind)} · ${skill.configRoot} · ${skill.path} 상세 보기`}
                           onClick={(event) => props.onSelect(skill, event.currentTarget)}
                         >
                           <span class="duplicate-install-meta">

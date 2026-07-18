@@ -136,6 +136,12 @@ const collator = new Intl.Collator(["ko", "en"], {
   sensitivity: "base",
 });
 
+function compareText(left: string, right: string): number {
+  const comparison = collator.compare(left, right);
+  if (comparison !== 0) return comparison;
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 export function normalizeSkillName(name: string): string {
   return name.normalize("NFKC").trim().toLocaleLowerCase();
 }
@@ -156,9 +162,9 @@ export function groupDuplicateSkills(records: SkillRecord[]): DuplicateSkillGrou
     .map(([key, recordsForName]) => ({
       key,
       name: recordsForName[0]!.name.trim() || key,
-      installs: recordsForName.toSorted((left, right) => collator.compare(left.path, right.path)),
+      installs: recordsForName.toSorted((left, right) => compareText(left.path, right.path)),
     }))
-    .toSorted((left, right) => collator.compare(left.key, right.key));
+    .toSorted((left, right) => compareText(left.key, right.key));
 }
 ```
 
@@ -240,7 +246,7 @@ it("shows duplicate installs by normalized name and opens their detail", async (
   expect(screen.getByText("/Users/me/.claude/skills/alpha/SKILL.md")).toBeInTheDocument();
 
   const trigger = screen.getByRole("button", {
-    name: "alpha · Claude Code · /Users/me/.claude/skills/alpha/SKILL.md 상세 보기",
+    name: "alpha · Claude Code · 사용자 설정 · /Users/me/.claude · /Users/me/.claude/skills/alpha/SKILL.md 상세 보기",
   });
   fireEvent.click(trigger);
   const dialog = await screen.findByRole("dialog");
@@ -320,7 +326,7 @@ export function DuplicateSkillsPanel(props: Props) {
                       <li>
                         <button
                           type="button"
-                          aria-label={`${skill.name} · ${skill.agent} · ${skill.path} 상세 보기`}
+                          aria-label={`${skill.name} · ${skill.agent} · ${kindLabel(skill.kind)} · ${skill.configRoot} · ${skill.path} 상세 보기`}
                           onClick={(event) => props.onSelect(skill, event.currentTarget)}
                         >
                           <span class="duplicate-install-meta">
@@ -504,6 +510,12 @@ git add README.md docs/superpowers src/components/dashboard
 git commit -m "feat(ui): 중복 설치 Skill 탭 추가"
 ```
 
-- [ ] **Step 11: 독립 코드 리뷰와 최종 검증**
+- [x] **Step 11: 독립 코드 리뷰와 최종 검증**
 
 `main..HEAD`에서 중복 판정 규칙, 전체 snapshot 집계, 접근성, focus 복원, 모바일 경로 보존을 리뷰한다. Critical/Important가 없으면 `npm run verify`를 다시 실행한다.
+
+리뷰 remediation도 이 단계에 포함한다.
+
+- 설치 button accessible name에 성격과 `configRoot`를 포함한다.
+- base/numeric collator 동률에 code-point tie-breaker를 적용한다.
+- Skill 필터 독립성과 refresh 후 memo 갱신을 회귀 테스트한다.
