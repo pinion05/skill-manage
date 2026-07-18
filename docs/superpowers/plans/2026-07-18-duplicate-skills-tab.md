@@ -194,7 +194,7 @@ git commit -m "feat(ui): 중복 Skill 그룹 모델 추가"
 - Produces: `DuplicateSkillsPanel({ groups, onSelect })`
 - Calls: `onSelect(skill: SkillRecord, trigger: HTMLButtonElement): void`
 
-- [ ] **Step 1: tab·그룹·상세·빈 상태 실패 테스트 작성**
+- [x] **Step 1: tab·그룹·상세·빈 상태 실패 테스트 작성**
 
 `src/components/dashboard/SkillDashboard.test.tsx`에 helper와 테스트를 추가한다.
 
@@ -258,7 +258,7 @@ it("shows an empty state when no skill name is installed twice", async () => {
 });
 ```
 
-- [ ] **Step 2: Dashboard 테스트가 기능 부재로 실패하는지 확인**
+- [x] **Step 2: Dashboard 테스트가 기능 부재로 실패하는지 확인**
 
 Run:
 
@@ -268,7 +268,7 @@ npm test -- src/components/dashboard/SkillDashboard.test.tsx
 
 Expected: `중복 설치` 버튼을 찾지 못해 두 신규 테스트 FAIL.
 
-- [ ] **Step 3: DuplicateSkillsPanel 구현**
+- [x] **Step 3: DuplicateSkillsPanel 구현**
 
 `src/components/dashboard/DuplicateSkillsPanel.tsx`를 생성한다.
 
@@ -350,7 +350,7 @@ export function DuplicateSkillsPanel(props: Props) {
 }
 ```
 
-- [ ] **Step 4: Dashboard에 세 번째 view와 상세 선택 연결**
+- [x] **Step 4: Dashboard에 세 번째 view와 상세 선택 연결**
 
 `SkillDashboard.tsx`에 `Match`, `Switch`, `DuplicateSkillsPanel`, `groupDuplicateSkills`, `normalizeSkillName`을 import한다. 상태와 memo를 다음처럼 확장한다.
 
@@ -427,7 +427,7 @@ const selectedDuplicates = createMemo(() => {
 </Switch>
 ```
 
-- [ ] **Step 5: 중복 그룹 스타일 추가**
+- [x] **Step 5: 중복 그룹 스타일 추가**
 
 `dashboard.css`에 다음 규칙을 추가한다.
 
@@ -462,7 +462,7 @@ const selectedDuplicates = createMemo(() => {
 .duplicate-path-field code { white-space: normal; overflow-wrap: anywhere; }
 ```
 
-- [ ] **Step 6: Dashboard 회귀 테스트 통과 확인**
+- [x] **Step 6: Dashboard 회귀 테스트 통과 확인**
 
 Run:
 
@@ -472,11 +472,11 @@ npm test -- src/components/dashboard/SkillDashboard.test.tsx src/lib/dashboard/d
 
 Expected: 두 test file의 모든 테스트 PASS.
 
-- [ ] **Step 7: 문서 갱신**
+- [x] **Step 7: 문서 갱신**
 
 `README.md` 제공 기능에 `이름 기준 중복 설치 탭과 모든 설정 루트·경로 표시`를 명시한다. 기존 설계 문서의 탐색 영역과 완료 조건에 중복 설치 탭을 추가한다.
 
-- [ ] **Step 8: 전체 검증**
+- [x] **Step 8: 전체 검증**
 
 Run:
 
@@ -487,7 +487,7 @@ git diff --check
 
 Expected: 모든 Vitest 테스트 PASS, Astro diagnostics 0개, production build 성공, whitespace 오류 없음.
 
-- [ ] **Step 9: 실제 브라우저 smoke**
+- [x] **Step 9: 실제 브라우저 smoke**
 
 실행 중인 `http://127.0.0.1:4321/`에서 다음을 확인한다.
 
@@ -497,7 +497,7 @@ Expected: 모든 Vitest 테스트 PASS, Astro diagnostics 0개, production build
 - 설치 선택 시 상세 dialog가 열리고 Escape 후 trigger focus가 복원된다.
 - 390px viewport에서 경로가 화면 밖으로 잘리지 않는다.
 
-- [ ] **Step 10: Task 2 커밋**
+- [x] **Step 10: Task 2 커밋**
 
 ```bash
 git add README.md docs/superpowers src/components/dashboard

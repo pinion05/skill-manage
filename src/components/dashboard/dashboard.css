@@ -133,6 +133,27 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
 .loading-stats i { height: 4.5rem; border-right: 1px solid var(--line); background: linear-gradient(100deg, transparent 25%, rgb(255 255 255 / 0.65) 45%, transparent 65%); background-size: 220% 100%; animation: scan-pass 1.6s ease-in-out infinite; }
 .loading-stats i:last-child { border-right: 0; }
 
+.duplicate-skills { padding: 2rem 0 3rem; }
+.duplicate-skills-heading { padding-bottom: 1rem; border-bottom: 1px solid var(--ink); }
+.duplicate-skills-heading h2 { margin-top: 0.35rem; font: 700 clamp(1.8rem, 3vw, 2.8rem)/1 var(--display); }
+.duplicate-skills-heading p:last-child { margin-top: 0.5rem; color: var(--muted); font-size: 0.8rem; }
+.duplicate-group-list { display: grid; }
+.duplicate-group { border-bottom: 1px solid var(--ink); }
+.duplicate-group > header { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding: 1rem 0 0.75rem; }
+.duplicate-group h3 { font: 700 1.25rem/1.1 var(--display); overflow-wrap: anywhere; }
+.duplicate-group > header span { color: var(--accent); font: 700 0.64rem/1 var(--mono); }
+.duplicate-group ul { margin: 0; padding: 0; list-style: none; }
+.duplicate-group li { border-top: 1px solid var(--line); }
+.duplicate-group li > button { width: 100%; display: grid; grid-template-columns: 11rem minmax(12rem, .7fr) minmax(18rem, 1.3fr); gap: 1rem; align-items: start; padding: 0.85rem 0; border: 0; background: transparent; color: var(--ink); text-align: left; cursor: pointer; }
+.duplicate-group li > button:hover { background: color-mix(in srgb, var(--accent-soft) 62%, transparent); }
+.duplicate-install-meta, .duplicate-path-field { min-width: 0; display: grid; gap: 0.3rem; }
+.duplicate-install-meta strong { font-size: 0.76rem; }
+.duplicate-install-meta span, .duplicate-path-field small { color: var(--muted); font: 0.6rem/1.2 var(--mono); }
+.duplicate-path-field code { color: #3f4b5f; font: 0.64rem/1.4 var(--mono); white-space: normal; overflow-wrap: anywhere; }
+.duplicate-empty { min-height: 22rem; display: grid; place-content: center; justify-items: center; gap: 0.5rem; text-align: center; }
+.duplicate-empty > span { color: var(--success); font: 300 3rem/1 var(--display); }
+.duplicate-empty p { color: var(--muted); font-size: 0.78rem; }
+
 .link-health { padding: 2rem 0 3rem; }
 .link-health-heading { display: flex; justify-content: space-between; align-items: end; gap: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--ink); }
 .link-health-heading h2 { margin-top: 0.35rem; font: 700 clamp(1.8rem, 3vw, 2.8rem)/1 var(--display); }
@@ -249,6 +270,9 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
   td.skill-source::before { content: "설정 / 성격"; grid-row: 1 / span 3; }
   td.skill-date::before { content: "수정"; }
   .skill-source strong, .skill-source span, .skill-source code { grid-column: 2; white-space: normal; overflow-wrap: anywhere; }
+  .duplicate-group > header { align-items: flex-start; }
+  .duplicate-group li > button { grid-template-columns: 1fr; gap: 0.65rem; }
+  .duplicate-path-field code { white-space: normal; overflow-wrap: anywhere; }
   .link-health-heading { align-items: stretch; flex-direction: column; }
   .segmented-control { align-self: start; }
   .root-audit-list { grid-template-columns: 1fr; }

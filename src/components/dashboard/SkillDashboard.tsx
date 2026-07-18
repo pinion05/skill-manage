@@ -1,4 +1,5 @@
-import { createMemo, createResource, createSignal, Show } from "solid-js";
+import { createMemo, createResource, createSignal, Match, Show, Switch } from "solid-js";
+import { groupDuplicateSkills, normalizeSkillName } from "../../lib/dashboard/duplicate-skills";
 import { applySkillQuery, type DashboardQuery } from "../../lib/dashboard/filter";
 import type {
   InventorySnapshot,
@@ -6,6 +7,7 @@ import type {
   SkillRecord,
   SkillRecordType,
 } from "../../lib/inventory/types";
+import { DuplicateSkillsPanel } from "./DuplicateSkillsPanel";
 import { FilterBar } from "./FilterBar";
 import { LinkHealthPanel } from "./LinkHealthPanel";
 import { ScanWarnings } from "./ScanWarnings";
@@ -41,7 +43,7 @@ const timeFormatter = new Intl.DateTimeFormat("ko-KR", {
 export function SkillDashboard() {
   const [snapshot, { mutate }] = createResource(() => requestInventory("/api/inventory"));
   const [query, setQuery] = createSignal<DashboardQuery>(INITIAL_QUERY);
-  const [view, setView] = createSignal<"skills" | "links">("skills");
+  const [view, setView] = createSignal<"skills" | "duplicates" | "links">("skills");
   const [selected, setSelected] = createSignal<SkillRecord>();
   const [refreshing, setRefreshing] = createSignal(false);
   const [refreshStatus, setRefreshStatus] = createSignal("");
@@ -52,12 +54,13 @@ export function SkillDashboard() {
     const current = snapshot();
     return current ? applySkillQuery(current.skills, query()) : [];
   });
+  const duplicateGroups = createMemo(() => groupDuplicateSkills(snapshot()?.skills ?? []));
   const selectedDuplicates = createMemo(() => {
     const current = selected();
     if (!current || !snapshot()) return [];
-    const name = current.name.toLocaleLowerCase();
+    const name = normalizeSkillName(current.name);
     return snapshot()!.skills.filter(
-      (skill) => skill.id !== current.id && skill.name.toLocaleLowerCase() === name,
+      (skill) => skill.id !== current.id && normalizeSkillName(skill.name) === name,
     );
   });
   const rootsWithSkills = createMemo(() =>
@@ -153,6 +156,14 @@ export function SkillDashboard() {
               </button>
               <button
                 type="button"
+                aria-pressed={view() === "duplicates"}
+                classList={{ active: view() === "duplicates" }}
+                onClick={() => setView("duplicates")}
+              >
+                중복 설치 <span>{duplicateGroups().length.toLocaleString("ko-KR")}</span>
+              </button>
+              <button
+                type="button"
                 aria-pressed={view() === "links"}
                 classList={{ active: view() === "links" }}
                 onClick={() => setView("links")}
@@ -161,32 +172,43 @@ export function SkillDashboard() {
               </button>
             </nav>
 
-            <Show
-              when={view() === "skills"}
-              fallback={<LinkHealthPanel links={current().links} roots={current().roots} />}
-            >
-              <FilterBar
-                query={query()}
-                roots={rootsWithSkills()}
-                resultCount={filteredSkills().length}
-                onSearch={(search) => updateQuery({ search })}
-                onKind={(kind: SkillKind | "") => updateQuery({ kinds: kind ? [kind] : [] })}
-                onRoot={(root) => updateQuery({ roots: root ? [root] : [] })}
-                onRecordType={(recordType: SkillRecordType | "") =>
-                  updateQuery({ recordTypes: recordType ? [recordType] : [] })
-                }
-                onSort={(sort, direction) => updateQuery({ sort, direction })}
-                onReset={() => setQuery(INITIAL_QUERY)}
-              />
-              <SkillTable
-                skills={filteredSkills()}
-                selectedId={selected()?.id}
-                onSelect={(skill, trigger) => {
-                  detailTrigger = trigger;
-                  setSelected(skill);
-                }}
-              />
-            </Show>
+            <Switch>
+              <Match when={view() === "skills"}>
+                <FilterBar
+                  query={query()}
+                  roots={rootsWithSkills()}
+                  resultCount={filteredSkills().length}
+                  onSearch={(search) => updateQuery({ search })}
+                  onKind={(kind: SkillKind | "") => updateQuery({ kinds: kind ? [kind] : [] })}
+                  onRoot={(root) => updateQuery({ roots: root ? [root] : [] })}
+                  onRecordType={(recordType: SkillRecordType | "") =>
+                    updateQuery({ recordTypes: recordType ? [recordType] : [] })
+                  }
+                  onSort={(sort, direction) => updateQuery({ sort, direction })}
+                  onReset={() => setQuery(INITIAL_QUERY)}
+                />
+                <SkillTable
+                  skills={filteredSkills()}
+                  selectedId={selected()?.id}
+                  onSelect={(skill, trigger) => {
+                    detailTrigger = trigger;
+                    setSelected(skill);
+                  }}
+                />
+              </Match>
+              <Match when={view() === "duplicates"}>
+                <DuplicateSkillsPanel
+                  groups={duplicateGroups()}
+                  onSelect={(skill, trigger) => {
+                    detailTrigger = trigger;
+                    setSelected(skill);
+                  }}
+                />
+              </Match>
+              <Match when={view() === "links"}>
+                <LinkHealthPanel links={current().links} roots={current().roots} />
+              </Match>
+            </Switch>
 
             <footer class="inventory-footer">
               <span>READ ONLY</span>

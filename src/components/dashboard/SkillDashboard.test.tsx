@@ -74,6 +74,28 @@ function inventory(name = "alpha"): InventorySnapshot {
   };
 }
 
+function duplicateInventory(): InventorySnapshot {
+  const snapshot = inventory("Alpha");
+  const first = snapshot.skills[0]!;
+  snapshot.skills = [
+    first,
+    {
+      ...first,
+      id: "skill-alpha-claude",
+      name: "alpha",
+      path: "/Users/me/.claude/skills/alpha/SKILL.md",
+      skillsRoot: "/Users/me/.claude/skills",
+      configRoot: "/Users/me/.claude",
+      agent: "Claude Code",
+      inode: 3,
+    },
+  ];
+  snapshot.stats.matchedFiles = 2;
+  snapshot.stats.skillDefinitions = 2;
+  snapshot.roots[0]!.skillCount = 2;
+  return snapshot;
+}
+
 function jsonResponse(body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status: 200,
@@ -126,6 +148,42 @@ describe("SkillDashboard", () => {
     expect(screen.getByRole("button", { name: "skill-60 상세 보기" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /skill-\d+ 상세 보기/ })).toHaveLength(61);
     expect(screen.queryByRole("navigation", { name: "Skill 목록 페이지" })).not.toBeInTheDocument();
+  });
+
+  it("shows duplicate installs by normalized name and opens their detail", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) =>
+        String(input).startsWith("/api/skills/content")
+          ? jsonResponse({ id: "skill-alpha", path: "/tmp/SKILL.md", markdown: "# A", html: "<h1>A</h1>" })
+          : jsonResponse(duplicateInventory()),
+      ),
+    );
+    render(() => <SkillDashboard />);
+
+    const tab = await screen.findByRole("button", { name: "중복 설치 1" });
+    fireEvent.click(tab);
+    expect(screen.getByRole("heading", { name: "Alpha" })).toBeInTheDocument();
+    expect(screen.getByText("2곳 설치")).toBeInTheDocument();
+    expect(screen.getByText("/Users/me/.codex", { selector: "code.duplicate-config-root" })).toBeInTheDocument();
+    expect(screen.getByText("/Users/me/.claude/skills/alpha/SKILL.md")).toBeInTheDocument();
+
+    const trigger = screen.getByRole("button", {
+      name: "alpha · Claude Code · /Users/me/.claude/skills/alpha/SKILL.md 상세 보기",
+    });
+    fireEvent.click(trigger);
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveAccessibleName("alpha");
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
+  it("shows an empty state when no skill name is installed twice", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(inventory())));
+    render(() => <SkillDashboard />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "중복 설치 0" }));
+    expect(screen.getByText("중복 설치된 skill이 없습니다.")).toBeInTheDocument();
   });
 
   it("shows scan-error samples and link aggregates by configuration root", async () => {
