@@ -1,5 +1,7 @@
 # Skill Inventory PoC Implementation Plan
 
+> **Superseded:** 페이지네이션 관련 단계와 acceptance는 `2026-07-18-unpaginated-skill-ledger.md` 및 해당 설계 문서로 대체되었습니다.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Astro SSR와 Solid.js로 현재 macOS 파일시스템의 `SKILL.md`와 skill 링크를 재검색하고 탐색하는 읽기 전용 로컬 대시보드를 만든다.

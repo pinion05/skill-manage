@@ -1,13 +1,11 @@
 import { For, Show } from "solid-js";
-import type { PageResult } from "../../lib/dashboard/filter";
 import type { SkillRecord } from "../../lib/inventory/types";
 import { kindLabel } from "./FilterBar";
 
 interface Props {
-  page: PageResult<SkillRecord>;
+  skills: SkillRecord[];
   selectedId?: string;
   onSelect: (skill: SkillRecord, trigger: HTMLButtonElement) => void;
-  onPage: (page: number) => void;
 }
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -20,7 +18,7 @@ export function SkillTable(props: Props) {
   return (
     <section class="ledger" aria-label="Skill 목록">
       <Show
-        when={props.page.items.length > 0}
+        when={props.skills.length > 0}
         fallback={
           <div class="empty-state">
             <span aria-hidden="true">∅</span>
@@ -40,7 +38,7 @@ export function SkillTable(props: Props) {
               </tr>
             </thead>
             <tbody>
-              <For each={props.page.items}>
+              <For each={props.skills}>
                 {(skill, index) => (
                   <tr
                     classList={{ "is-selected": props.selectedId === skill.id }}
@@ -78,34 +76,6 @@ export function SkillTable(props: Props) {
           </table>
         </div>
 
-        <nav class="pagination" aria-label="Skill 목록 페이지">
-          <span>
-            {props.page.total.toLocaleString("ko-KR")}개 중{" "}
-            {((props.page.page - 1) * props.page.pageSize + 1).toLocaleString("ko-KR")}–
-            {Math.min(props.page.page * props.page.pageSize, props.page.total).toLocaleString("ko-KR")}
-          </span>
-          <div>
-            <button
-              type="button"
-              onClick={() => props.onPage(props.page.page - 1)}
-              disabled={props.page.page <= 1}
-              aria-label="이전 페이지"
-            >
-              ←
-            </button>
-            <b>
-              {props.page.page} / {props.page.pageCount}
-            </b>
-            <button
-              type="button"
-              onClick={() => props.onPage(props.page.page + 1)}
-              disabled={props.page.page >= props.page.pageCount}
-              aria-label="다음 페이지"
-            >
-              →
-            </button>
-          </div>
-        </nav>
       </Show>
     </section>
   );

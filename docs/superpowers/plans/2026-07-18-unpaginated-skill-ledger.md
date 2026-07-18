@@ -45,7 +45,7 @@
 - Consumes: `applySkillQuery(records: SkillRecord[], query: DashboardQuery): SkillRecord[]`
 - Produces: `SkillTable({ skills, selectedId, onSelect })`, where `skills: SkillRecord[]`
 
-- [ ] **Step 1: 50개 초과 결과가 모두 보이는 실패 테스트 작성**
+- [x] **Step 1: 50개 초과 결과가 모두 보이는 실패 테스트 작성**
 
 `src/components/dashboard/SkillDashboard.test.tsx`에 다음 테스트를 추가한다.
 
@@ -75,7 +75,7 @@ it("renders every filtered skill in one ledger without pagination", async () => 
 });
 ```
 
-- [ ] **Step 2: 실패 테스트 확인**
+- [x] **Step 2: 실패 테스트 확인**
 
 Run:
 
@@ -85,7 +85,7 @@ npm test -- src/components/dashboard/SkillDashboard.test.tsx
 
 Expected: `skill-60 상세 보기`를 찾지 못해 FAIL. 기존 50개 page slice가 원인임을 확인한다.
 
-- [ ] **Step 3: Dashboard에서 pagination 상태 제거**
+- [x] **Step 3: Dashboard에서 pagination 상태 제거**
 
 `src/components/dashboard/SkillDashboard.tsx`에서 `paginate` import, `page` signal, `pageResult` memo, query/reset 시 `setPage`, `SkillTable`의 `page`/`onPage` props를 제거한다. 전체 결과를 다음처럼 전달한다.
 
@@ -100,7 +100,7 @@ Expected: `skill-60 상세 보기`를 찾지 못해 FAIL. 기존 50개 page slic
 />
 ```
 
-- [ ] **Step 4: SkillTable을 전체 배열 인터페이스로 단순화**
+- [x] **Step 4: SkillTable을 전체 배열 인터페이스로 단순화**
 
 `src/components/dashboard/SkillTable.tsx`의 props와 반복 대상을 다음처럼 바꾼다.
 
@@ -174,11 +174,11 @@ interface Props {
 
 `<nav class="pagination" aria-label="Skill 목록 페이지">` 전체를 삭제한다. row index animation 상한과 기존 cell/header markup은 유지한다.
 
-- [ ] **Step 5: 폐기된 pagination 코드와 스타일 제거**
+- [x] **Step 5: 폐기된 pagination 코드와 스타일 제거**
 
 `src/lib/dashboard/filter.ts`에서 `PageResult<T>`와 `paginate`를 삭제한다. `src/lib/dashboard/filter.test.ts`에서 `paginate` import와 `describe("paginate", ...)`를 삭제한다. `src/components/dashboard/dashboard.css`에서 `.pagination` 규칙과 모바일 `.pagination` 규칙을 삭제한다.
 
-- [ ] **Step 6: 회귀 테스트 통과 확인**
+- [x] **Step 6: 회귀 테스트 통과 확인**
 
 Run:
 
@@ -188,7 +188,7 @@ npm test -- src/components/dashboard/SkillDashboard.test.tsx src/lib/dashboard/f
 
 Expected: 두 test file의 모든 테스트 PASS. 61개 상세 버튼과 pagination navigation 부재 assertion이 통과한다.
 
-- [ ] **Step 7: 현재 동작 문서 갱신**
+- [x] **Step 7: 현재 동작 문서 갱신**
 
 `README.md`의 `50개 단위 페이지네이션`을 `검색·필터 결과 전체를 한 원장에 표시`로 바꾼다. 기존 설계 문서의 pagination 요구를 전체 원장 렌더링으로 바꾸고, 기존 구현 계획 상단에는 다음 안내를 추가한다.
 
@@ -196,7 +196,7 @@ Expected: 두 test file의 모든 테스트 PASS. 61개 상세 버튼과 paginat
 > **Superseded:** 페이지네이션 관련 단계와 acceptance는 `2026-07-18-unpaginated-skill-ledger.md` 및 해당 설계 문서로 대체되었습니다.
 ```
 
-- [ ] **Step 8: 전체 검증**
+- [x] **Step 8: 전체 검증**
 
 Run:
 
@@ -207,7 +207,7 @@ git diff --check
 
 Expected: 모든 Vitest 테스트 PASS, Astro diagnostics 0개, production build 성공, whitespace 오류 없음.
 
-- [ ] **Step 9: 브라우저 smoke 확인**
+- [x] **Step 9: 브라우저 smoke 확인**
 
 실행 중인 dev server `http://127.0.0.1:4321/`에서 실제 인벤토리 검색 완료 후 다음을 확인한다.
 
@@ -216,7 +216,7 @@ Expected: 모든 Vitest 테스트 PASS, Astro diagnostics 0개, production build
 - `skill-60`에 해당하는 마지막 fixture가 아닌 실제 마지막 record까지 DOM에서 접근 가능함.
 - 검색 후 결과 전체가 하나의 표에 남음.
 
-- [ ] **Step 10: 커밋**
+- [x] **Step 10: 커밋**
 
 ```bash
 git add README.md docs/superpowers src/components/dashboard src/lib/dashboard

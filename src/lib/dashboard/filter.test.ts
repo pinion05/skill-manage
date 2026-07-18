@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SkillRecord } from "../inventory/types";
-import { applySkillQuery, paginate, type DashboardQuery } from "./filter";
+import { applySkillQuery, type DashboardQuery } from "./filter";
 
 function skill(overrides: Partial<SkillRecord> = {}): SkillRecord {
   return {
@@ -81,20 +81,5 @@ describe("applySkillQuery", () => {
       ),
     ).toEqual(["Alpha", "zeta"]);
     expect(records.map((record) => record.name)).toEqual(originalOrder);
-  });
-});
-
-describe("paginate", () => {
-  it("clamps pages and returns stable pagination metadata", () => {
-    const records = Array.from({ length: 121 }, (_, index) => skill({ name: `skill-${index}` }));
-
-    expect(paginate(records, 99, 50)).toMatchObject({
-      page: 3,
-      pageCount: 3,
-      pageSize: 50,
-      total: 121,
-    });
-    expect(paginate(records, 99, 50).items).toHaveLength(21);
-    expect(paginate([], 2, 50)).toEqual({ items: [], page: 1, pageCount: 1, pageSize: 50, total: 0 });
   });
 });

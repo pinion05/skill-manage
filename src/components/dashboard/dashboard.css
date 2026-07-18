@@ -122,12 +122,6 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
 .empty-state { min-height: 28rem; display: grid; place-content: center; justify-items: center; gap: 0.5rem; text-align: center; }
 .empty-state > span { color: var(--accent); font: 300 4rem/1 var(--display); }
 .empty-state p { color: var(--muted); font-size: 0.78rem; }
-.pagination { display: flex; align-items: center; justify-content: space-between; padding: 1rem 0 1.5rem; border-bottom: 1px solid var(--ink); color: var(--muted); font: 0.68rem/1 var(--mono); }
-.pagination > div { display: flex; align-items: center; gap: 0.8rem; }
-.pagination button { width: 2.25rem; height: 2.1rem; border: 1px solid var(--line-strong); background: transparent; cursor: pointer; }
-.pagination button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-.pagination button:disabled { opacity: 0.35; cursor: default; }
-.pagination b { color: var(--ink); }
 
 .initial-loading { min-height: calc(100vh - 15rem); display: grid; align-content: center; justify-items: start; gap: 0.45rem; }
 .initial-loading p { font: 700 clamp(1.6rem, 4vw, 3.2rem)/1 var(--display); }
@@ -273,7 +267,5 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
   .warning-samples { padding-left: 0; }
   .warning-samples li { grid-template-columns: 1fr; gap: 0.25rem; padding: 0.45rem 0; border-top: 1px solid var(--line); }
   .warning-samples code { white-space: normal; overflow-wrap: anywhere; }
-  .pagination > span { display: none; }
-  .pagination { justify-content: flex-end; }
   .inventory-footer { grid-template-columns: 1fr; }
 }

@@ -104,6 +104,30 @@ describe("SkillDashboard", () => {
     expect(screen.getByText("조건에 맞는 skill이 없습니다.")).toBeInTheDocument();
   });
 
+  it("renders every filtered skill in one ledger without pagination", async () => {
+    const manySkills = inventory();
+    const template = manySkills.skills[0]!;
+    manySkills.skills = Array.from({ length: 61 }, (_, index) => ({
+      ...template,
+      id: `skill-${index}`,
+      name: `skill-${String(index).padStart(2, "0")}`,
+      path: `/Users/me/.codex/skills/skill-${index}/SKILL.md`,
+      inode: index + 1,
+    }));
+    manySkills.stats.matchedFiles = 61;
+    manySkills.stats.skillDefinitions = 61;
+    manySkills.stats.uniqueNames = 61;
+    manySkills.roots[0]!.skillCount = 61;
+
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(manySkills)));
+    render(() => <SkillDashboard />);
+
+    expect(await screen.findByRole("button", { name: "skill-00 상세 보기" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "skill-60 상세 보기" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /skill-\d+ 상세 보기/ })).toHaveLength(61);
+    expect(screen.queryByRole("navigation", { name: "Skill 목록 페이지" })).not.toBeInTheDocument();
+  });
+
   it("shows scan-error samples and link aggregates by configuration root", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(inventory())));
     render(() => <SkillDashboard />);

@@ -1,5 +1,5 @@
 import { createMemo, createResource, createSignal, Show } from "solid-js";
-import { applySkillQuery, paginate, type DashboardQuery } from "../../lib/dashboard/filter";
+import { applySkillQuery, type DashboardQuery } from "../../lib/dashboard/filter";
 import type {
   InventorySnapshot,
   SkillKind,
@@ -41,7 +41,6 @@ const timeFormatter = new Intl.DateTimeFormat("ko-KR", {
 export function SkillDashboard() {
   const [snapshot, { mutate }] = createResource(() => requestInventory("/api/inventory"));
   const [query, setQuery] = createSignal<DashboardQuery>(INITIAL_QUERY);
-  const [page, setPage] = createSignal(1);
   const [view, setView] = createSignal<"skills" | "links">("skills");
   const [selected, setSelected] = createSignal<SkillRecord>();
   const [refreshing, setRefreshing] = createSignal(false);
@@ -53,7 +52,6 @@ export function SkillDashboard() {
     const current = snapshot();
     return current ? applySkillQuery(current.skills, query()) : [];
   });
-  const pageResult = createMemo(() => paginate(filteredSkills(), page(), 50));
   const selectedDuplicates = createMemo(() => {
     const current = selected();
     if (!current || !snapshot()) return [];
@@ -68,7 +66,6 @@ export function SkillDashboard() {
 
   const updateQuery = (patch: Partial<DashboardQuery>) => {
     setQuery((current) => ({ ...current, ...patch }));
-    setPage(1);
   };
 
   const refresh = async () => {
@@ -179,19 +176,15 @@ export function SkillDashboard() {
                   updateQuery({ recordTypes: recordType ? [recordType] : [] })
                 }
                 onSort={(sort, direction) => updateQuery({ sort, direction })}
-                onReset={() => {
-                  setQuery(INITIAL_QUERY);
-                  setPage(1);
-                }}
+                onReset={() => setQuery(INITIAL_QUERY)}
               />
               <SkillTable
-                page={pageResult()}
+                skills={filteredSkills()}
                 selectedId={selected()?.id}
                 onSelect={(skill, trigger) => {
                   detailTrigger = trigger;
                   setSelected(skill);
                 }}
-                onPage={setPage}
               />
             </Show>
 

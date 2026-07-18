@@ -9,14 +9,6 @@ export interface DashboardQuery {
   direction: "asc" | "desc";
 }
 
-export interface PageResult<T> {
-  items: T[];
-  page: number;
-  pageCount: number;
-  pageSize: number;
-  total: number;
-}
-
 const collator = new Intl.Collator(["ko", "en"], {
   numeric: true,
   sensitivity: "base",
@@ -58,19 +50,4 @@ export function applySkillQuery(records: SkillRecord[], query: DashboardQuery): 
     }
     return comparison * direction;
   });
-}
-
-export function paginate<T>(records: T[], requestedPage: number, requestedPageSize: number): PageResult<T> {
-  const pageSize = Math.max(1, Math.floor(requestedPageSize) || 1);
-  const pageCount = Math.max(1, Math.ceil(records.length / pageSize));
-  const page = Math.min(pageCount, Math.max(1, Math.floor(requestedPage) || 1));
-  const start = (page - 1) * pageSize;
-
-  return {
-    items: records.slice(start, start + pageSize),
-    page,
-    pageCount,
-    pageSize,
-    total: records.length,
-  };
 }
