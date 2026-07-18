@@ -24,6 +24,8 @@ function inventory(name = "alpha"): InventorySnapshot {
         kind: "user/global-config",
         modifiedAt: "2026-07-18T00:00:00.000Z",
         size: 128,
+        device: 1,
+        inode: 2,
       },
     ],
     links: [
@@ -92,6 +94,10 @@ describe("SkillDashboard", () => {
     expect(screen.getByText("파일시스템을 읽는 중")).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: /alpha 상세 보기/ })).toBeInTheDocument();
     expect(screen.getByText("1", { selector: 'strong[data-stat="skills"]' })).toBeInTheDocument();
+    expect(screen.getAllByRole("columnheader")).toHaveLength(4);
+    expect(document.querySelector("td.skill-description")).toHaveAttribute("headers", "skill-column-description");
+    expect(document.querySelector("td.skill-source")).toHaveAttribute("headers", "skill-column-source");
+    expect(document.querySelector("td.skill-date")).toHaveAttribute("headers", "skill-column-modified");
 
     fireEvent.input(screen.getByRole("searchbox"), { target: { value: "없는 스킬" } });
     expect(screen.getByText("조건에 맞는 skill이 없습니다.")).toBeInTheDocument();
@@ -124,6 +130,11 @@ describe("SkillDashboard", () => {
     fireEvent.click(trigger);
     const heading = await screen.findByRole("heading", { name: "alpha" });
     await waitFor(() => expect(heading).toHaveFocus());
+
+    fireEvent.keyDown(window, { key: "Tab", shiftKey: true });
+    expect(screen.getByRole("button", { name: "경로 복사" })).toHaveFocus();
+    fireEvent.keyDown(window, { key: "Tab" });
+    expect(screen.getByRole("button", { name: "상세 닫기" })).toHaveFocus();
 
     fireEvent.keyDown(document, { key: "Escape" });
     await waitFor(() => expect(trigger).toHaveFocus());

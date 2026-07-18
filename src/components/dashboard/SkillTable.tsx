@@ -33,10 +33,10 @@ export function SkillTable(props: Props) {
           <table>
             <thead>
               <tr>
-                <th scope="col">이름</th>
-                <th scope="col">설명</th>
-                <th scope="col">설정 / 성격</th>
-                <th scope="col">수정</th>
+                <th id="skill-column-name" scope="col">이름</th>
+                <th id="skill-column-description" scope="col">설명</th>
+                <th id="skill-column-source" scope="col">설정 / 성격</th>
+                <th id="skill-column-modified" scope="col">수정</th>
               </tr>
             </thead>
             <tbody>
@@ -46,7 +46,7 @@ export function SkillTable(props: Props) {
                     classList={{ "is-selected": props.selectedId === skill.id }}
                     style={`--row-index:${Math.min(index(), 12)}`}
                   >
-                    <td class="skill-identity">
+                    <td class="skill-identity" headers="skill-column-name">
                       <button
                         type="button"
                         class="skill-name"
@@ -60,14 +60,14 @@ export function SkillTable(props: Props) {
                       </button>
                       <code title={skill.path}>{skill.path}</code>
                     </td>
-                    <td class="skill-description">
+                    <td class="skill-description" headers="skill-column-description">
                       {skill.description || <span class="muted-value">설명 없음</span>}
                     </td>
-                    <td class="skill-source">
+                    <td class="skill-source" headers="skill-column-source">
                       <strong>{skill.agent}</strong>
                       <span>{kindLabel(skill.kind)}</span>
                     </td>
-                    <td class="skill-date">
+                    <td class="skill-date" headers="skill-column-modified">
                       <time datetime={skill.modifiedAt}>{dateFormatter.format(new Date(skill.modifiedAt))}</time>
                     </td>
                   </tr>

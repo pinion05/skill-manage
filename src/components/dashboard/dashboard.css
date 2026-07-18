@@ -243,7 +243,7 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
   .filter-summary { min-width: 0; }
   .table-wrap { overflow: visible; }
   table, tbody { display: block; }
-  thead { display: none; }
+  thead { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
   tbody tr { display: grid; gap: 0.65rem; padding: 1rem 0; border-bottom: 1px solid var(--line); }
   tbody td { display: grid; width: 100%; height: auto; padding: 0; border: 0; animation: none; }
   .skill-identity > code { white-space: normal; overflow-wrap: anywhere; }
