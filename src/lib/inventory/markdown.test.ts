@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -59,6 +59,30 @@ describe("readSkillContent", () => {
     expect(result.html).toContain("<h1>Body heading</h1>");
     expect(result.html).not.toContain("name: alpha");
     expect(result.html).not.toContain("Alpha description");
+  });
+
+  it("renders raw HTML and Markdown images as inert text", async () => {
+    const record = await fixtureRecord(
+      '<p class="raw">raw html</p>\n\n![tracking pixel](http://127.0.0.1:9999/private)\n',
+    );
+
+    const result = await readSkillContent(record);
+
+    expect(result.html).not.toContain('<p class="raw">');
+    expect(result.html).not.toContain("<img");
+    expect(result.html).not.toContain("127.0.0.1:9999");
+    expect(result.html).toContain("raw html");
+    expect(result.html).toContain("tracking pixel");
+  });
+
+  it("rejects a cached skill path replaced by a symlink", async () => {
+    const record = await fixtureRecord("# Original\n");
+    const secretPath = path.join(path.dirname(record.path), "secret.txt");
+    await writeFile(secretPath, "TOP SECRET");
+    await rm(record.path);
+    await symlink(secretPath, record.path);
+
+    await expect(readSkillContent(record)).rejects.toBeInstanceOf(InvalidSkillFileError);
   });
 
   it("rejects files outside the accepted skill filenames", async () => {

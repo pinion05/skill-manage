@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { access, lstat, opendir, readFile, readlink, realpath, stat } from "node:fs/promises";
+import { constants } from "node:fs";
+import { access, lstat, open, opendir, readlink, realpath, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import matter from "gray-matter";
@@ -21,6 +22,8 @@ export interface ScanOptions {
 
 const SKILL_FILE = "skill.md";
 const SKILLS_DOCUMENT = "skills.md";
+const MAX_FRONTMATTER_BYTES = 1024 * 1024;
+const MAX_LINK_TARGET_DIRECTORIES = 10_000;
 
 export function defaultScanOptions(home = os.homedir()): ScanOptions {
   return {
@@ -60,34 +63,65 @@ function shouldExclude(directoryPath: string, name: string): boolean {
   );
 }
 
+const SAFE_ERROR_MESSAGES: Record<string, string> = {
+  EACCES: "접근 권한이 없습니다.",
+  EPERM: "운영체제가 접근을 허용하지 않았습니다.",
+  ENOENT: "검색 중 경로가 사라졌습니다.",
+  ENOTDIR: "검색 중 디렉터리 구조가 바뀌었습니다.",
+  ELOOP: "심볼릭 링크 순환을 감지했습니다.",
+  FILE_TOO_LARGE: "1 MiB를 초과해 frontmatter 읽기를 생략했습니다.",
+  FRONTMATTER_PARSE: "frontmatter를 해석하지 못해 디렉터리 이름을 사용했습니다.",
+  LINK_SCAN_LIMIT: "링크 대상 검색 한도에 도달했습니다.",
+};
+
+function codedError(code: string): NodeJS.ErrnoException {
+  return Object.assign(new Error(SAFE_ERROR_MESSAGES[code] ?? "파일시스템 오류"), { code });
+}
+
 function errorDetails(error: unknown, errorPath: string): ScanError {
   const candidate = error as NodeJS.ErrnoException;
+  const code = candidate.code ?? "UNKNOWN";
   return {
     path: errorPath,
-    code: candidate.code ?? "UNKNOWN",
-    message: candidate.message ?? String(error),
+    code,
+    message: SAFE_ERROR_MESSAGES[code] ?? "파일시스템 항목을 읽지 못했습니다.",
   };
 }
 
-async function targetContainsSkill(target: string, depth = 0): Promise<boolean> {
+async function targetContainsSkill(
+  target: string,
+  onError: (error: unknown, errorPath: string) => void,
+): Promise<boolean> {
   try {
     const targetStat = await stat(target);
     if (targetStat.isFile()) return path.basename(target).toLowerCase() === SKILL_FILE;
-    if (!targetStat.isDirectory() || depth > 3) return false;
-
-    const directory = await opendir(target);
-    const childDirectories: string[] = [];
-    for await (const entry of directory) {
-      if (entry.isFile() && entry.name.toLowerCase() === SKILL_FILE) return true;
-      if (entry.isDirectory() && depth < 3 && !shouldExclude(target, entry.name)) {
-        childDirectories.push(path.join(target, entry.name));
-      }
-    }
-    for (const child of childDirectories) {
-      if (await targetContainsSkill(child, depth + 1)) return true;
-    }
-  } catch {
+    if (!targetStat.isDirectory()) return false;
+  } catch (error) {
+    onError(error, target);
     return false;
+  }
+
+  const queue = [target];
+  let inspected = 0;
+  while (queue.length > 0) {
+    const directoryPath = queue.shift();
+    if (!directoryPath) break;
+    inspected += 1;
+    if (inspected > MAX_LINK_TARGET_DIRECTORIES) {
+      onError(codedError("LINK_SCAN_LIMIT"), target);
+      return false;
+    }
+    try {
+      const directory = await opendir(directoryPath);
+      for await (const entry of directory) {
+        if (entry.isFile() && entry.name.toLowerCase() === SKILL_FILE) return true;
+        if (entry.isDirectory() && !shouldExclude(directoryPath, entry.name)) {
+          queue.push(path.join(directoryPath, entry.name));
+        }
+      }
+    } catch (error) {
+      onError(error, directoryPath);
+    }
   }
   return false;
 }
@@ -157,39 +191,54 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
       errorSamples.push(errorDetails(error, errorPath));
     }
   };
+  const recordIssue = (code: string, errorPath: string): void => {
+    recordError(codedError(code), errorPath);
+  };
 
   const inspectSkill = async (filePath: string, fileName: string): Promise<void> => {
     try {
-      const [source, fileStat] = await Promise.all([readFile(filePath, "utf8"), stat(filePath)]);
-      let name = path.basename(path.dirname(filePath));
-      let description = "";
+      const handle = await open(filePath, constants.O_RDONLY | constants.O_NOFOLLOW);
       try {
-        const parsed = matter(source);
-        if (typeof parsed.data.name === "string" && parsed.data.name.trim()) {
-          name = parsed.data.name.trim();
+        const fileStat = await handle.stat();
+        let name = path.basename(path.dirname(filePath));
+        let description = "";
+        if (fileStat.size > MAX_FRONTMATTER_BYTES) {
+          recordIssue("FILE_TOO_LARGE", filePath);
+        } else {
+          const buffer = Buffer.alloc(fileStat.size);
+          const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
+          const source = buffer.subarray(0, bytesRead).toString("utf8");
+          try {
+            const parsed = matter(source);
+            if (typeof parsed.data.name === "string" && parsed.data.name.trim()) {
+              name = parsed.data.name.trim();
+            }
+            if (typeof parsed.data.description === "string") {
+              description = parsed.data.description.trim();
+            }
+          } catch {
+            recordIssue("FRONTMATTER_PARSE", filePath);
+          }
         }
-        if (typeof parsed.data.description === "string") {
-          description = parsed.data.description.trim();
-        }
-      } catch (error) {
-        recordError(error, filePath);
-      }
 
-      const configRoot = inferConfigRoot(filePath, options.home);
-      skills.push({
-        id: stableId(filePath),
-        name,
-        description,
-        path: filePath,
-        fileName,
-        recordType: fileName.toLowerCase() === SKILL_FILE ? "skill" : "document",
-        skillsRoot: findSkillsRoot(filePath),
-        configRoot,
-        agent: inferAgentLabel(configRoot, options.home),
-        kind: classifyPath(filePath, options.home),
-        modifiedAt: fileStat.mtime.toISOString(),
-        size: fileStat.size,
-      });
+        const configRoot = inferConfigRoot(filePath, options.home);
+        skills.push({
+          id: stableId(filePath),
+          name,
+          description,
+          path: filePath,
+          fileName,
+          recordType: fileName.toLowerCase() === SKILL_FILE ? "skill" : "document",
+          skillsRoot: findSkillsRoot(filePath),
+          configRoot,
+          agent: inferAgentLabel(configRoot, options.home),
+          kind: classifyPath(filePath, options.home),
+          modifiedAt: fileStat.mtime.toISOString(),
+          size: fileStat.size,
+        });
+      } finally {
+        await handle.close();
+      }
     } catch (error) {
       recordError(error, filePath);
     }
@@ -205,9 +254,17 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
         target = await realpath(resolvedTarget);
         await stat(target);
         status = "healthy";
-      } catch {
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if (code === "EACCES" || code === "EPERM") recordError(error, resolvedTarget);
         status = "broken";
       }
+      const onTargetError = (error: unknown, errorPath: string): void => {
+        const code = (error as NodeJS.ErrnoException).code;
+        if (code === "EACCES" || code === "EPERM" || code === "LINK_SCAN_LIMIT") {
+          recordError(error, errorPath);
+        }
+      };
       const configRoot = inferConfigRoot(linkPath, options.home);
       links.push({
         id: stableId(linkPath),
@@ -216,7 +273,7 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
         configRoot,
         agent: inferAgentLabel(configRoot, options.home),
         status,
-        containsSkill: status === "healthy" ? await targetContainsSkill(target) : false,
+        containsSkill: status === "healthy" ? await targetContainsSkill(target, onTargetError) : false,
       });
     } catch (error) {
       recordError(error, linkPath);

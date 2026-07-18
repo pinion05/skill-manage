@@ -102,6 +102,48 @@ describe("scanInventory", () => {
     expect(snapshot.skills.filter((skill) => skill.name === "alpha")).toHaveLength(1);
   });
 
+  it("bounds frontmatter reads and sanitizes parser errors", async () => {
+    const root = await makeFixture();
+    const hugeDirectory = path.join(root, ".codex", "skills", "huge");
+    const invalidDirectory = path.join(root, ".codex", "skills", "invalid");
+    await Promise.all([
+      mkdir(hugeDirectory, { recursive: true }),
+      mkdir(invalidDirectory, { recursive: true }),
+    ]);
+    await Promise.all([
+      writeFile(path.join(hugeDirectory, "SKILL.md"), "x".repeat(1024 * 1024 + 1)),
+      writeFile(
+        path.join(invalidDirectory, "SKILL.md"),
+        "---\nname: invalid\ndescription: [PRIVATE-SOURCE-SNIPPET\n---\n",
+      ),
+    ]);
+
+    const snapshot = await scanInventory({ roots: [root], home: root });
+
+    expect(snapshot.skills.some((skill) => skill.name === "huge")).toBe(true);
+    expect(snapshot.errors.samples.some((error) => error.code === "FILE_TOO_LARGE")).toBe(true);
+    expect(snapshot.errors.samples.some((error) => error.code === "FRONTMATTER_PARSE")).toBe(true);
+    expect(snapshot.errors.samples.every((error) => !error.message.includes("PRIVATE-SOURCE-SNIPPET"))).toBe(
+      true,
+    );
+  });
+
+  it("detects skills below deeply nested healthy link targets", async () => {
+    const root = await makeFixture();
+    const deepTarget = path.join(root, "deep", "one", "two", "three", "four", "five", "skill");
+    const deepLink = path.join(root, "links", "skills", "deep-link");
+    await mkdir(deepTarget, { recursive: true });
+    await writeFile(path.join(deepTarget, "SKILL.md"), "---\nname: deep\n---\n");
+    await symlink(path.join(root, "deep"), deepLink);
+
+    const snapshot = await scanInventory({ roots: [root], home: root });
+
+    expect(snapshot.links.find((link) => link.path === deepLink)).toMatchObject({
+      status: "healthy",
+      containsSkill: true,
+    });
+  });
+
   it("returns deterministic path ordering and root aggregates", async () => {
     const root = await makeFixture();
     const snapshot = await scanInventory({ roots: [root], home: root });
