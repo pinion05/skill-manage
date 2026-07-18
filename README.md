@@ -39,7 +39,7 @@ npm start
 - 현재 선택한 검색 mode만 갱신하는 수동 재검색
 - 데스크톱·모바일 반응형 화면
 
-에이전트 탭은 project sighting을 집계에서 제외하되 같은 파일의 전역·관리자 sighting은 유지합니다. 프로젝트 탭은 agent namespace 앞의 project dir로 대분류하고 같은 물리 Skill의 여러 agent alias를 한 entry에 표시합니다. 전체 파일시스템 mode에서 공식 sighting이 없는 항목만 기존 `project/source-local` 분류와 경로 규칙으로 보완합니다.
+에이전트 탭은 project sighting을 집계에서 제외하되 같은 파일의 전역·관리자 sighting은 유지합니다. 프로젝트 탭은 agent namespace 앞의 project dir로 대분류하고 같은 물리 Skill의 여러 agent alias를 한 entry에 표시합니다. 두 탭의 Agent owner 그룹과 Project dir 그룹은 처음에는 접혀 있으며 각 그룹을 독립적으로 펼치거나 접을 수 있습니다. 전체 파일시스템 mode에서 공식 sighting이 없는 항목만 기존 `project/source-local` 분류와 경로 규칙으로 보완합니다.
 
 ## 검색 범위
 

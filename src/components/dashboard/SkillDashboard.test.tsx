@@ -352,7 +352,15 @@ describe("SkillDashboard", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "에이전트 1" }));
     expect(screen.getByRole("heading", { name: "Claude Code" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /global-skill.*상세 보기/ })).toBeInTheDocument();
+    const agentToggle = screen.getByRole("button", { name: "Claude Code Skill 목록 토글" });
+    const agentGroup = agentToggle.closest("details")!;
+    const globalSkillTrigger = screen.getByRole("button", { name: /global-skill.*상세 보기/ });
+    expect(agentGroup).not.toHaveAttribute("open");
+    expect(globalSkillTrigger).not.toBeVisible();
+
+    fireEvent.click(agentToggle);
+    expect(agentGroup).toHaveAttribute("open");
+    expect(globalSkillTrigger).toBeVisible();
     expect(
       screen.queryByText("/Users/me/dev/app/.copilot/skills/global-skill/SKILL.md"),
     ).not.toBeInTheDocument();
@@ -360,8 +368,22 @@ describe("SkillDashboard", () => {
     expect(screen.queryByText("project-only")).not.toBeInTheDocument();
     expect(screen.queryByText("document-only")).not.toBeInTheDocument();
 
+    fireEvent.click(agentToggle);
+    expect(agentGroup).not.toHaveAttribute("open");
+    expect(globalSkillTrigger).not.toBeVisible();
+
     fireEvent.click(screen.getByRole("button", { name: "프로젝트 2" }));
-    const project = screen.getByRole("heading", { name: "app" }).closest("article")!;
+    const projectToggle = screen.getByRole("button", { name: "app 프로젝트 Skill 목록 토글" });
+    const project = projectToggle.closest("details")!;
+    const projectSkillTrigger = within(project).getByRole("button", {
+      name: /project-only.*상세 보기/,
+    });
+    expect(project).not.toHaveAttribute("open");
+    expect(projectSkillTrigger).not.toBeVisible();
+
+    fireEvent.click(projectToggle);
+    expect(project).toHaveAttribute("open");
+    expect(projectSkillTrigger).toBeVisible();
     expect(within(project).getByText("/Users/me/dev/app")).toBeInTheDocument();
     expect(within(project).getAllByText("global-skill")).toHaveLength(1);
     expect(within(project).getAllByText("project-only")).toHaveLength(1);
@@ -376,7 +398,7 @@ describe("SkillDashboard", () => {
     ).toBeInTheDocument();
     expect(within(globalRow).queryByText("Claude Code")).not.toBeInTheDocument();
 
-    const trigger = within(project).getByRole("button", { name: /project-only.*상세 보기/ });
+    const trigger = projectSkillTrigger;
     const projectOnlyRow = trigger.closest("li")!;
     expect(within(projectOnlyRow).getByText("Claude Code")).toBeInTheDocument();
     expect(within(projectOnlyRow).getByText("Cursor")).toBeInTheDocument();

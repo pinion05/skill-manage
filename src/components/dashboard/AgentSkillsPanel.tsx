@@ -27,14 +27,14 @@ export function AgentSkillsPanel(props: Props) {
         <div class="taxonomy-group-list">
           <For each={props.projection.groups}>
             {(group) => (
-              <article
+              <details
                 class="agent-skill-group"
                 classList={{ "is-shared-owner": group.owner.type === "shared" }}
               >
-                <header>
+                <summary role="button" aria-label={`${group.owner.name} Skill 목록 토글`}>
                   <h3>{group.owner.name}</h3>
                   <span>{group.skills.length.toLocaleString("ko-KR")} SKILLS</span>
-                </header>
+                </summary>
                 <ul class="taxonomy-skill-list">
                   <For each={group.skills}>
                     {(entry) => (
@@ -60,7 +60,7 @@ export function AgentSkillsPanel(props: Props) {
                     )}
                   </For>
                 </ul>
-              </article>
+              </details>
             )}
           </For>
         </div>

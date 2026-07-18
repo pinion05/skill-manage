@@ -30,8 +30,11 @@ export function ProjectSkillsPanel(props: Props) {
         <div class="project-group-list">
           <For each={props.projection.groups}>
             {(group) => (
-              <article class="project-skill-group">
-                <header>
+              <details class="project-skill-group">
+                <summary
+                  role="button"
+                  aria-label={`${pathLeaf(group.directory)} 프로젝트 Skill 목록 토글`}
+                >
                   <div>
                     <h3>{pathLeaf(group.directory)}</h3>
                     <code>{group.directory}</code>
@@ -40,7 +43,7 @@ export function ProjectSkillsPanel(props: Props) {
                     {group.skills.length.toLocaleString("ko-KR")} SKILLS ·{" "}
                     {group.ownerCount.toLocaleString("ko-KR")} AGENTS
                   </span>
-                </header>
+                </summary>
                 <ul class="taxonomy-skill-list">
                   <For each={group.skills}>
                     {(entry) => (
@@ -70,7 +73,7 @@ export function ProjectSkillsPanel(props: Props) {
                     )}
                   </For>
                 </ul>
-              </article>
+              </details>
             )}
           </For>
         </div>
