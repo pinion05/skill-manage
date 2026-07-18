@@ -25,7 +25,11 @@ function snapshot(
   };
   return {
     scanMode,
-    officialSources: { agents: [], roots: [] },
+    officialSources: {
+      shared: { id: "shared", name: "공유 디렉터리", globalPaths: [], projectPaths: [] },
+      agents: [],
+      roots: [],
+    },
     generatedAt: new Date(0).toISOString(),
     durationMs: 1,
     searchRoots: ["/tmp"],

@@ -219,7 +219,17 @@ export function SkillDashboard() {
                 classList={{ active: view() === "sources" }}
                 onClick={() => setView("sources")}
               >
-                공식 소스 <span>{current().officialSources.agents.length.toLocaleString("ko-KR")}</span>
+                공식 소스{" "}
+                <span>
+                  {(
+                    current().officialSources.agents.length +
+                    (current().officialSources.shared.globalPaths.length +
+                      current().officialSources.shared.projectPaths.length >
+                    0
+                      ? 1
+                      : 0)
+                  ).toLocaleString("ko-KR")}
+                </span>
               </button>
             </nav>
 

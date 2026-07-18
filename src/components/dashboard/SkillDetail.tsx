@@ -1,6 +1,5 @@
 import { createResource, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import type {
-  OfficialSourceKind,
   OfficialSourceScope,
   ScanMode,
   SkillContent,
@@ -24,12 +23,6 @@ async function fetchContent(source: { id: string; mode: ScanMode }): Promise<Ski
   if (!response.ok) throw new Error(body.error ?? "본문을 읽지 못했습니다.");
   return body as SkillContent;
 }
-
-const sourceKindLabels: Record<OfficialSourceKind, string> = {
-  native: "native",
-  shared: "shared",
-  compatibility: "compatibility",
-};
 
 const sourceScopeLabels: Record<OfficialSourceScope, string> = {
   user: "사용자",
@@ -141,12 +134,8 @@ export function SkillDetail(props: Props) {
                 {(sighting) => (
                   <li>
                     <div>
-                      <strong>{sighting.agents.join(" · ")}</strong>
-                      <span>
-                        {sourceScopeLabels[sighting.scope]} · {sighting.kinds
-                          .map((kind) => sourceKindLabels[kind])
-                          .join(" · ")}
-                      </span>
+                      <strong>{sighting.owner.name}</strong>
+                      <span>{sourceScopeLabels[sighting.scope]}</span>
                     </div>
                     <code>{sighting.path}</code>
                   </li>

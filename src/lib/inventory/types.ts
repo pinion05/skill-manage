@@ -12,8 +12,6 @@ export type SkillRecordType = "skill" | "document";
 export type LinkStatus = "healthy" | "broken";
 export type ScanMode = "official" | "full";
 export type OfficialSourceScope = "user" | "project" | "admin";
-export type OfficialSourceKind = "native" | "shared" | "compatibility";
-
 export interface OfficialSourceOwner {
   id: string;
   name: string;
@@ -31,8 +29,7 @@ export interface SkillSourceSighting {
   rootPath: string;
   path: string;
   scope: OfficialSourceScope;
-  kinds: OfficialSourceKind[];
-  agents: string[];
+  owner: OfficialSourceOwner;
 }
 
 export interface OfficialAgentSource {
@@ -48,13 +45,13 @@ export interface OfficialSourceRoot {
   path: string;
   canonicalPath?: string;
   scope: OfficialSourceScope;
-  kinds: OfficialSourceKind[];
-  agents: string[];
+  owner: OfficialSourceOwner;
   exists: boolean;
   skillCount: number;
 }
 
 export interface OfficialSourceSummary {
+  shared: OfficialSharedSource;
   agents: OfficialAgentSource[];
   roots: OfficialSourceRoot[];
 }

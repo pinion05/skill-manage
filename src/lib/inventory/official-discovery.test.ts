@@ -120,7 +120,10 @@ describe("discoverOfficialRoots", () => {
     );
     expect(
       discovery.roots.find(({ path: rootPath }) => rootPath === path.join(home, ".qwen", "skills")),
-    ).toMatchObject({ exists: false, agents: ["Qwen Code"] });
+    ).toMatchObject({
+      exists: false,
+      owner: { id: "qwen", name: "Qwen Code", type: "agent" },
+    });
     expect(discovery.errors.count).toBe(0);
   });
 
@@ -165,16 +168,54 @@ describe("annotateFullInventory", () => {
     expect(annotated.scanMode).toBe("full");
     expect(annotated.skills).toHaveLength(2);
     expect(
-      annotated.skills.find(({ name }) => name === "official-in-full")?.sourceSightings[0]?.agents,
-    ).toContain("Claude Code");
+      annotated.skills.find(({ name }) => name === "official-in-full")?.sourceSightings[0]?.owner,
+    ).toEqual({ id: "claude-code", name: "Claude Code", type: "agent" });
     expect(
       annotated.skills.find(({ name }) => name === "unrelated-in-full")?.sourceSightings,
     ).toEqual([]);
-    expect(annotated.officialSources.agents.length).toBeGreaterThan(20);
+    expect(annotated.officialSources.shared.name).toBe("공유 디렉터리");
+    expect(annotated.officialSources.agents.map(({ id }) => id)).not.toEqual(
+      expect.arrayContaining(["zed", "sakana-fugu"]),
+    );
   });
 });
 
 describe("scanOfficialInventory", () => {
+  it("assigns namespace owners without dropping compatibility-only project roots", async () => {
+    const home = await temporaryHome();
+    await Promise.all([
+      writeSkill(path.join(home, "dev", "app", ".agents", "skills"), "shared-owner"),
+      writeSkill(path.join(home, "dev", "app", ".claude", "skills"), "claude-owner"),
+      writeSkill(path.join(home, "dev", "app", ".codex", "skills"), "codex-owner"),
+    ]);
+
+    const snapshot = await scanOfficialInventory({
+      home,
+      environment: {},
+      concurrency: 2,
+      discoveryMaxDirectories: 10_000,
+    });
+    const ownerOf = (name: string) =>
+      snapshot.skills.find((skill) => skill.name === name)?.sourceSightings[0]?.owner;
+
+    expect(snapshot.skills).toHaveLength(3);
+    expect(ownerOf("shared-owner")).toEqual({
+      id: "shared",
+      name: "공유 디렉터리",
+      type: "shared",
+    });
+    expect(ownerOf("claude-owner")).toEqual({
+      id: "claude-code",
+      name: "Claude Code",
+      type: "agent",
+    });
+    expect(ownerOf("codex-owner")).toEqual({
+      id: "codex",
+      name: "Codex CLI",
+      type: "agent",
+    });
+  });
+
   it("scans one physical root and file while preserving every official root and skill alias", async () => {
     const home = await temporaryHome();
     const sharedRoot = path.join(home, "shared-store");
@@ -222,6 +263,10 @@ describe("scanOfficialInventory", () => {
       ({ canonicalPath }) => canonicalPath === canonicalSharedRoot,
     );
     expect(aliasedRoots).toHaveLength(2);
+    expect(aliasedRoots.map(({ owner }) => owner.id).sort()).toEqual(["cursor", "shared"]);
     expect(aliasedRoots.every(({ skillCount }) => skillCount === 1)).toBe(true);
+    expect(snapshot.skills[0]!.sourceSightings.map(({ owner }) => owner.id)).toEqual(
+      expect.arrayContaining(["shared", "cursor"]),
+    );
   });
 });

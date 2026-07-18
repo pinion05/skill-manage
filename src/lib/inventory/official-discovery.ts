@@ -97,16 +97,16 @@ function sourceRoot(
     id: stableId(`${match.scope}:${rootPath}`),
     path: path.resolve(rootPath),
     scope: match.scope,
-    kinds: [...match.kinds],
-    agents: [...match.agents],
+    owner: match.owner,
     exists,
     skillCount: 0,
   };
 }
 
 function mergeRoot(target: OfficialSourceRoot, match: OfficialRootMatch): void {
-  target.kinds = unique([...target.kinds, ...match.kinds]);
-  target.agents = unique([...target.agents, ...match.agents]);
+  if (target.owner.id !== match.owner.id) {
+    throw new Error(`공식 Skill root 소유권 충돌: ${target.owner.id} / ${match.owner.id}`);
+  }
 }
 
 function errorDetails(error: unknown, errorPath: string): ScanError {
@@ -311,7 +311,7 @@ export async function discoverOfficialRoots(
 }
 
 function sightingKey(sighting: SkillSourceSighting): string {
-  return `${sighting.scope}:${sighting.rootPath}:${sighting.path}:${sighting.agents.join("\0")}:${sighting.kinds.join("\0")}`;
+  return `${sighting.scope}:${sighting.rootPath}:${sighting.path}:${sighting.owner.id}`;
 }
 
 function dedupeSightings(sightings: SkillSourceSighting[]): SkillSourceSighting[] {
@@ -336,8 +336,7 @@ function rootSightingsForPath(
       rootPath: root.path,
       path: path.join(root.path, relative),
       scope: root.scope,
-      kinds: [...root.kinds],
-      agents: [...root.agents],
+      owner: root.owner,
     });
   }
   return sightings;
@@ -429,11 +428,7 @@ async function dedupeOfficialSkills(
       ...record,
       skillsRoot: primary?.rootPath ?? record.skillsRoot,
       configRoot: primary ? path.dirname(primary.rootPath) : record.configRoot,
-      agent: primary
-        ? primary.agents.length === 1
-          ? primary.agents[0]!
-          : "Shared official skills"
-        : record.agent,
+      agent: primary?.owner.name ?? record.agent,
       kind: primary?.scope === "project" ? "project/source-local" : record.kind,
       sourceSightings: sightings,
     });
@@ -483,7 +478,11 @@ export async function scanOfficialInventory(
   return {
     ...base,
     scanMode: "official",
-    officialSources: { agents: discovery.registry.agents, roots: discovery.roots },
+    officialSources: {
+      shared: discovery.registry.shared,
+      agents: discovery.registry.agents,
+      roots: discovery.roots,
+    },
     generatedAt: new Date().toISOString(),
     durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
     searchRoots,
@@ -541,8 +540,7 @@ export async function annotateFullInventory(
           rootPath: root.path,
           path: record.path,
           scope: root.scope,
-          kinds: [...root.kinds],
-          agents: [...root.agents],
+          owner: root.owner,
         },
       ],
     });
@@ -572,6 +570,6 @@ export async function annotateFullInventory(
     ...snapshot,
     scanMode: "full",
     skills,
-    officialSources: { agents: registry.agents, roots: rootList },
+    officialSources: { shared: registry.shared, agents: registry.agents, roots: rootList },
   };
 }

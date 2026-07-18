@@ -64,7 +64,11 @@ describe("scanInventory", () => {
     const snapshot = await scanInventory({ roots: [root], home: root });
 
     expect(snapshot.scanMode).toBe("full");
-    expect(snapshot.officialSources).toEqual({ agents: [], roots: [] });
+    expect(snapshot.officialSources).toEqual({
+      shared: { id: "shared", name: "공유 디렉터리", globalPaths: [], projectPaths: [] },
+      agents: [],
+      roots: [],
+    });
     expect(snapshot.skills).toHaveLength(3);
     expect(snapshot.skills.every((skill) => skill.sourceSightings.length === 0)).toBe(true);
     expect(snapshot.stats.skillDefinitions).toBe(2);

@@ -2,12 +2,12 @@ import path from "node:path";
 import type {
   OfficialAgentSource,
   OfficialSharedSource,
-  OfficialSourceKind,
   OfficialSourceOwner,
   OfficialSourceScope,
 } from "./types";
 
 type Environment = Readonly<Record<string, string | undefined>>;
+type OfficialSourceKind = "native" | "shared" | "compatibility";
 
 interface RegistryContext {
   home: string;

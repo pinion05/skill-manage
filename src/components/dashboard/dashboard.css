@@ -168,6 +168,8 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
 .official-agent-row { padding: 1rem 0 1.2rem; border-bottom: 1px solid var(--ink); }
 .official-agent-row > header { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: start; }
 .official-agent-row h3 { font: 700 1.3rem/1.1 var(--display); }
+.official-agent-row.is-shared-owner { box-shadow: inset 3px 0 var(--accent); padding-left: 0.8rem; }
+.official-agent-row.is-shared-owner h3 { color: var(--accent); }
 .official-agent-row header p { margin-top: 0.35rem; color: var(--muted); font: 0.62rem/1.3 var(--mono); }
 .official-agent-row header a { color: var(--accent); font: 700 0.68rem/1.2 var(--mono); text-decoration-thickness: 1px; text-underline-offset: 4px; }
 .official-patterns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; margin-top: 1rem; }
@@ -176,14 +178,13 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
 .official-patterns code { color: #3f4b5f; font: 0.63rem/1.35 var(--mono); overflow-wrap: anywhere; }
 .official-patterns em { color: var(--muted); font-size: 0.7rem; }
 .official-root-list { margin: 1rem 0 0; padding: 0; border-top: 1px solid var(--line); list-style: none; }
-.official-root-list li { display: grid; grid-template-columns: 10rem minmax(0, 1fr) auto; gap: 1rem; align-items: center; min-height: 3.4rem; border-bottom: 1px solid var(--line); }
+.official-root-list li { display: grid; grid-template-columns: 10rem minmax(0, 1fr); gap: 1rem; align-items: center; min-height: 3.4rem; border-bottom: 1px solid var(--line); }
 .official-root-list li:last-child { border-bottom: 0; }
 .official-root-list li > div { display: grid; gap: 0.25rem; }
-.official-root-list li span, .official-root-list li small { color: var(--muted); font: 0.58rem/1.2 var(--mono); }
+.official-root-list li span { color: var(--muted); font: 0.58rem/1.2 var(--mono); }
 .official-root-list li strong { color: var(--success); font-size: 0.68rem; }
 .official-root-list li.missing strong { color: var(--muted); }
 .official-root-list code { min-width: 0; color: #3f4b5f; font: 0.64rem/1.35 var(--mono); overflow-wrap: anywhere; }
-.official-root-list small { text-align: right; white-space: nowrap; }
 .official-source-empty { min-height: 20rem; display: grid; place-items: center; color: var(--muted); }
 
 .link-health { padding: 2rem 0 3rem; }
@@ -319,7 +320,6 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
   .official-sources-heading { align-items: flex-start; flex-direction: column; gap: 0.8rem; }
   .official-patterns { grid-template-columns: 1fr; gap: 0.9rem; }
   .official-root-list li { grid-template-columns: 1fr; gap: 0.4rem; padding: 0.75rem 0; }
-  .official-root-list li small { text-align: left; white-space: normal; }
   .source-sighting-list li { grid-template-columns: 1fr; gap: 0.4rem; }
   .link-health-heading { align-items: stretch; flex-direction: column; }
   .segmented-control { align-self: start; }

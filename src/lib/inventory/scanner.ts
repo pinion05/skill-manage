@@ -418,7 +418,11 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
 
   return {
     scanMode: "full",
-    officialSources: { agents: [], roots: [] },
+    officialSources: {
+      shared: { id: "shared", name: "공유 디렉터리", globalPaths: [], projectPaths: [] },
+      agents: [],
+      roots: [],
+    },
     generatedAt: new Date().toISOString(),
     durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
     searchRoots,

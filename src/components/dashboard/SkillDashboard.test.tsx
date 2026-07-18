@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@solidjs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { InventorySnapshot } from "../../lib/inventory/types";
 import { SkillDashboard } from "./SkillDashboard";
@@ -8,7 +8,11 @@ import { SkillDashboard } from "./SkillDashboard";
 function inventory(name = "alpha"): InventorySnapshot {
   return {
     scanMode: "official",
-    officialSources: { agents: [], roots: [] },
+    officialSources: {
+      shared: { id: "shared", name: "공유 디렉터리", globalPaths: [], projectPaths: [] },
+      agents: [],
+      roots: [],
+    },
     generatedAt: "2026-07-18T01:00:00.000Z",
     durationMs: 42,
     searchRoots: ["/Users/me"],
@@ -80,6 +84,12 @@ function inventory(name = "alpha"): InventorySnapshot {
 function sourcedInventory(): InventorySnapshot {
   const snapshot = inventory();
   snapshot.officialSources = {
+    shared: {
+      id: "shared",
+      name: "공유 디렉터리",
+      globalPaths: ["/Users/me/.agents/skills"],
+      projectPaths: ["**/.agents/skills"],
+    },
     agents: [
       {
         id: "claude-code",
@@ -88,15 +98,30 @@ function sourcedInventory(): InventorySnapshot {
         globalPaths: ["/Users/me/.claude/skills"],
         projectPaths: ["**/.claude/skills"],
       },
+      {
+        id: "cursor",
+        name: "Cursor",
+        documentationUrl: "https://cursor.com/docs/skills",
+        globalPaths: ["/Users/me/.cursor/skills"],
+        projectPaths: ["**/.cursor/skills"],
+      },
     ],
     roots: [
       {
-        id: "claude-root",
-        path: "/Users/me/.claude/skills",
+        id: "shared-root",
+        path: "/Users/me/.agents/skills",
         canonicalPath: "/Users/me/.shared/skills",
         scope: "user",
-        kinds: ["native", "compatibility"],
-        agents: ["Claude Code", "Cursor"],
+        owner: { id: "shared", name: "공유 디렉터리", type: "shared" },
+        exists: true,
+        skillCount: 1,
+      },
+      {
+        id: "claude-root",
+        path: "/Users/me/.claude/skills",
+        canonicalPath: "/Users/me/.claude/skills",
+        scope: "user",
+        owner: { id: "claude-code", name: "Claude Code", type: "agent" },
         exists: true,
         skillCount: 1,
       },
@@ -107,8 +132,7 @@ function sourcedInventory(): InventorySnapshot {
       rootPath: "/Users/me/.claude/skills",
       path: "/Users/me/.claude/skills/alpha/SKILL.md",
       scope: "user",
-      kinds: ["native", "compatibility"],
-      agents: ["Claude Code", "Cursor"],
+      owner: { id: "claude-code", name: "Claude Code", type: "agent" },
     },
   ];
   return snapshot;
@@ -197,7 +221,7 @@ describe("SkillDashboard", () => {
     );
   });
 
-  it("shows verified official sources and every alias in the existing detail dialog", async () => {
+  it("shows one shared owner, vendor-owned paths, and owner-only detail aliases", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) =>
       String(input).startsWith("/api/skills/content")
         ? jsonResponse({ id: "skill-alpha", path: "/tmp/SKILL.md", markdown: "# A", html: "<h1>A</h1>" })
@@ -206,19 +230,27 @@ describe("SkillDashboard", () => {
     vi.stubGlobal("fetch", fetchMock);
     render(() => <SkillDashboard />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "공식 소스 1" }));
+    fireEvent.click(await screen.findByRole("button", { name: "공식 소스 3" }));
+    expect(screen.getAllByRole("heading", { name: "공유 디렉터리" })).toHaveLength(1);
+    expect(screen.queryByRole("link", { name: "공유 디렉터리 공식 문서" })).not.toBeInTheDocument();
+    expect(screen.getAllByText("/Users/me/.agents/skills")).toHaveLength(2);
+
     const docsLink = screen.getByRole("link", { name: "Claude Code 공식 문서" });
     expect(docsLink).toHaveAttribute("href", "https://code.claude.com/docs/en/skills");
     expect(docsLink).toHaveAttribute("rel", "noreferrer noopener");
-    expect(screen.getAllByText("/Users/me/.claude/skills").length).toBeGreaterThan(0);
-    expect(screen.getByText("**/.claude/skills")).toBeInTheDocument();
-    expect(screen.getByText("발견 · Skill 1개")).toBeInTheDocument();
+    const claudeRow = screen.getByRole("heading", { name: "Claude Code" }).closest("article")!;
+    const cursorRow = screen.getByRole("heading", { name: "Cursor" }).closest("article")!;
+    expect(within(claudeRow).getAllByText("/Users/me/.claude/skills")).toHaveLength(2);
+    expect(within(cursorRow).getByText("/Users/me/.cursor/skills")).toBeInTheDocument();
+    expect(within(cursorRow).queryByText("/Users/me/.claude/skills")).not.toBeInTheDocument();
+    expect(screen.queryByText("compatibility")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Skill 파일 1" }));
     fireEvent.click(screen.getByRole("button", { name: /alpha 상세 보기/ }));
     expect(await screen.findByRole("heading", { name: "공식 소스 경로" })).toBeInTheDocument();
     expect(screen.getByText("/Users/me/.claude/skills/alpha/SKILL.md")).toBeInTheDocument();
-    expect(screen.getByText("Claude Code · Cursor")).toBeInTheDocument();
+    expect(screen.getByText("Claude Code")).toBeInTheDocument();
+    expect(screen.queryByText("Cursor")).not.toBeInTheDocument();
     await waitFor(() =>
       expect(
         fetchMock.mock.calls.some(
