@@ -174,6 +174,12 @@ function skillViewInventory(): InventorySnapshot {
       scope: "user",
       owner: { id: "claude-code", name: "Claude Code", type: "agent" },
     },
+    {
+      rootPath: "/Users/me/dev/app/.copilot/skills",
+      path: "/Users/me/dev/app/.copilot/skills/global-skill/SKILL.md",
+      scope: "project",
+      owner: { id: "github-copilot", name: "GitHub Copilot", type: "agent" },
+    },
   ];
   snapshot.skills = [
     globalSkill,
@@ -342,22 +348,38 @@ describe("SkillDashboard", () => {
     render(() => <SkillDashboard />);
 
     expect(await screen.findByRole("button", { name: "에이전트 1" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "프로젝트 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "프로젝트 2" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "에이전트 1" }));
     expect(screen.getByRole("heading", { name: "Claude Code" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /global-skill.*상세 보기/ })).toBeInTheDocument();
+    expect(
+      screen.queryByText("/Users/me/dev/app/.copilot/skills/global-skill/SKILL.md"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("GitHub Copilot")).not.toBeInTheDocument();
     expect(screen.queryByText("project-only")).not.toBeInTheDocument();
     expect(screen.queryByText("document-only")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "프로젝트 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "프로젝트 2" }));
     const project = screen.getByRole("heading", { name: "app" }).closest("article")!;
     expect(within(project).getByText("/Users/me/dev/app")).toBeInTheDocument();
+    expect(within(project).getAllByText("global-skill")).toHaveLength(1);
     expect(within(project).getAllByText("project-only")).toHaveLength(1);
-    expect(within(project).getByText("Claude Code")).toBeInTheDocument();
-    expect(within(project).getByText("Cursor")).toBeInTheDocument();
+    expect(within(project).getByText(/2 SKILLS · 3 AGENTS/)).toBeInTheDocument();
+
+    const globalRow = within(project)
+      .getByRole("button", { name: /global-skill.*상세 보기/ })
+      .closest("li")!;
+    expect(within(globalRow).getByText("GitHub Copilot")).toBeInTheDocument();
+    expect(
+      within(globalRow).getByText("/Users/me/dev/app/.copilot/skills/global-skill/SKILL.md"),
+    ).toBeInTheDocument();
+    expect(within(globalRow).queryByText("Claude Code")).not.toBeInTheDocument();
 
     const trigger = within(project).getByRole("button", { name: /project-only.*상세 보기/ });
+    const projectOnlyRow = trigger.closest("li")!;
+    expect(within(projectOnlyRow).getByText("Claude Code")).toBeInTheDocument();
+    expect(within(projectOnlyRow).getByText("Cursor")).toBeInTheDocument();
     fireEvent.click(trigger);
     expect(await screen.findByRole("dialog")).toHaveAccessibleName("project-only");
     fireEvent.keyDown(document, { key: "Escape" });
