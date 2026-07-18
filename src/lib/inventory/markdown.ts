@@ -1,4 +1,5 @@
 import { readFile, stat } from "node:fs/promises";
+import matter from "gray-matter";
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 import type { SkillContent, SkillRecord } from "./types";
@@ -27,7 +28,13 @@ export async function readSkillContent(record: SkillRecord): Promise<SkillConten
   }
 
   const markdown = await readFile(record.path, "utf8");
-  const unsafeHtml = await marked.parse(markdown, { gfm: true });
+  let renderableMarkdown = markdown;
+  try {
+    renderableMarkdown = matter(markdown).content;
+  } catch {
+    // Invalid frontmatter remains visible instead of making the read-only viewer fail.
+  }
+  const unsafeHtml = await marked.parse(renderableMarkdown, { gfm: true });
   const html = sanitizeHtml(unsafeHtml, {
     allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
     allowedAttributes: {

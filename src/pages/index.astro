@@ -1,11 +1,14 @@
 ---
+import { SkillDashboard } from "../components/dashboard/SkillDashboard";
 import AppLayout from "../layouts/AppLayout.astro";
 ---
 
-<AppLayout>
-  <main class="boot-shell">
-    <p class="boot-kicker">LOCAL SKILL INDEX</p>
-    <h1>Skill Atlas</h1>
-    <p>대시보드를 준비하고 있습니다.</p>
-  </main>
+<AppLayout title="Skill Atlas — 로컬 스킬 인벤토리">
+  <SkillDashboard client:only="solid-js">
+    <section class="boot-shell" slot="fallback">
+      <p class="boot-kicker">LOCAL SKILL INDEX</p>
+      <h1>Skill Atlas</h1>
+      <p>파일시스템을 읽는 중</p>
+    </section>
+  </SkillDashboard>
 </AppLayout>

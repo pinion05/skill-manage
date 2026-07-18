@@ -6,7 +6,7 @@
 
 **Architecture:** Astro Node standalone 서버가 제한된 파일시스템 스캐너와 메모리 스냅샷 캐시를 소유한다. Solid.js 대시보드는 읽기 전용 API를 통해 스냅샷을 받아 검색·필터·정렬·페이지네이션을 수행하고, allowlist로 검증된 skill 본문만 별도 API에서 읽는다.
 
-**Tech Stack:** Astro 7.1.1, Solid.js 1.9.14, TypeScript 6.0.3, `@astrojs/node` 11.0.2, `@astrojs/solid-js` 7.0.1, Vitest 4.1.10, gray-matter 4.0.3, marked 18.0.6, sanitize-html 2.17.6
+**Tech Stack:** Astro 7.1.1, Solid.js 1.9.14, TypeScript 6.0.3, `@astrojs/node` 11.0.2, `@astrojs/solid-js` 7.0.1, Vitest 4.1.10, Solid Testing Library 0.8.10, jsdom 29.1.1, gray-matter 4.0.3, marked 18.0.6, sanitize-html 2.17.6
 
 ## Global Constraints
 
@@ -28,6 +28,7 @@
 - Create: `tsconfig.json`
 - Create: `.gitignore`
 - Create: `src/env.d.ts`
+- Create: `vitest.config.ts`
 - Create: `src/pages/index.astro`
 - Create: `src/layouts/AppLayout.astro`
 - Create: `src/styles/global.css`
@@ -66,8 +67,11 @@
   },
   "devDependencies": {
     "@astrojs/check": "0.9.9",
+    "@solidjs/testing-library": "0.8.10",
+    "@testing-library/jest-dom": "6.9.1",
     "@types/node": "26.1.1",
     "@types/sanitize-html": "2.16.1",
+    "jsdom": "29.1.1",
     "typescript": "6.0.3",
     "vitest": "4.1.10"
   }
@@ -91,7 +95,7 @@ export default defineConfig({
 });
 ```
 
-`tsconfig.json`은 `astro/tsconfigs/strict`를 확장하고 `src/*` 별칭을 추가한다.
+`tsconfig.json`은 `astro/tsconfigs/strict`를 확장하고 `jsxImportSource: "solid-js"`와 `src/*` 별칭을 추가한다.
 
 - [ ] **Step 3: 기본 레이아웃과 전역 토큰 작성**
 
@@ -431,6 +435,7 @@ git commit -m "feat(ui): 인벤토리 탐색 모델 추가" -m "대량 목록의
 
 **Files:**
 - Create: `src/components/dashboard/SkillDashboard.tsx`
+- Create: `src/components/dashboard/SkillDashboard.test.tsx`
 - Create: `src/components/dashboard/StatsStrip.tsx`
 - Create: `src/components/dashboard/FilterBar.tsx`
 - Create: `src/components/dashboard/SkillTable.tsx`

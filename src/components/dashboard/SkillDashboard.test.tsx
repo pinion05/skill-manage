@@ -1,0 +1,115 @@
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { InventorySnapshot } from "../../lib/inventory/types";
+import { SkillDashboard } from "./SkillDashboard";
+
+function inventory(name = "alpha"): InventorySnapshot {
+  return {
+    generatedAt: "2026-07-18T01:00:00.000Z",
+    durationMs: 42,
+    searchRoots: ["/Users/me"],
+    skills: [
+      {
+        id: "skill-alpha",
+        name,
+        description: "브라우저를 제어하는 테스트 스킬",
+        path: "/Users/me/.codex/skills/alpha/SKILL.md",
+        fileName: "SKILL.md",
+        recordType: "skill",
+        skillsRoot: "/Users/me/.codex/skills",
+        configRoot: "/Users/me/.codex",
+        agent: "OpenAI Codex",
+        kind: "user/global-config",
+        modifiedAt: "2026-07-18T00:00:00.000Z",
+        size: 128,
+      },
+    ],
+    links: [
+      {
+        id: "broken-link",
+        path: "/Users/me/.qwen/skills/missing",
+        target: "/Users/me/.agents/skills/missing",
+        configRoot: "/Users/me/.qwen",
+        agent: "Qwen Code",
+        status: "broken",
+        containsSkill: false,
+      },
+    ],
+    roots: [
+      {
+        configRoot: "/Users/me/.codex",
+        agent: "OpenAI Codex",
+        skillCount: 1,
+        documentCount: 0,
+        healthyLinks: 0,
+        brokenLinks: 0,
+      },
+    ],
+    errors: { count: 0, samples: [] },
+    stats: {
+      matchedFiles: 1,
+      skillDefinitions: 1,
+      documents: 0,
+      uniqueNames: 1,
+      configRoots: 1,
+      healthyLinks: 0,
+      brokenLinks: 1,
+      errorCount: 0,
+    },
+  };
+}
+
+function jsonResponse(body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
+
+describe("SkillDashboard", () => {
+  it("loads the inventory and filters the visible skill list", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(inventory())));
+    render(() => <SkillDashboard />);
+
+    expect(screen.getByText("파일시스템을 읽는 중")).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /alpha 상세 보기/ })).toBeInTheDocument();
+    expect(screen.getByText("1", { selector: 'strong[data-stat="skills"]' })).toBeInTheDocument();
+
+    fireEvent.input(screen.getByRole("searchbox"), { target: { value: "없는 스킬" } });
+    expect(screen.getByText("조건에 맞는 skill이 없습니다.")).toBeInTheDocument();
+  });
+
+  it("refreshes and opens sanitized skill detail content", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.startsWith("/api/skills/content")) {
+        return jsonResponse({
+          id: "skill-alpha",
+          path: "/Users/me/.codex/skills/alpha/SKILL.md",
+          markdown: "# Alpha",
+          html: "<h1>Alpha content</h1>",
+        });
+      }
+      if (init?.method === "POST") return jsonResponse(inventory("alpha-refreshed"));
+      return jsonResponse(inventory());
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(() => <SkillDashboard />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /alpha 상세 보기/ }));
+    expect(await screen.findByRole("heading", { name: "Alpha content" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "파일시스템 재검색" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /alpha-refreshed 상세 보기/ })).toBeInTheDocument();
+    });
+    expect(fetchMock).toHaveBeenCalledWith("/api/inventory/refresh", { method: "POST" });
+  });
+});
