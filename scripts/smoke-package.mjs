@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
 import { spawn } from "node:child_process";
-import { mkdtemp, rm, unlink } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import {
   childOutcome,
   formatOutcome,
-  runCaptured,
   terminateProcessTree,
 } from "./smoke-cleanup.mjs";
+import { createValidatedPack } from "./package-pack.mjs";
 import { createServer } from "node:net";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -17,7 +17,6 @@ const HOST = "127.0.0.1";
 const START_TIMEOUT_MS = 30_000;
 const POLL_INTERVAL_MS = 100;
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
-const expectedTarball = join(packageRoot, "skill-manage-0.1.0.tgz");
 
 function delay(milliseconds) {
   return new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds));
@@ -39,68 +38,6 @@ async function chooseFreePort() {
     server.close((error) => error ? rejectClose(error) : resolveClose());
   });
   return address.port;
-}
-
-function parsePackJson(stdout) {
-  for (let index = stdout.lastIndexOf("["); index >= 0; index = stdout.lastIndexOf("[", index - 1)) {
-    try {
-      const value = JSON.parse(stdout.slice(index).trim());
-      if (Array.isArray(value)) return value;
-    } catch {
-      // Lifecycle output can precede the final npm pack JSON document.
-    }
-  }
-  throw new Error(`Could not find the npm pack JSON document in output:\n${stdout}`);
-}
-
-function inspectPack(packJson) {
-  if (!Array.isArray(packJson) || packJson.length !== 1) {
-    throw new Error("npm pack --json did not describe exactly one package");
-  }
-  const pack = packJson[0];
-  if (pack.name !== "skill-manage" || pack.version !== "0.1.0") {
-    throw new Error(`Unexpected packed package: ${pack.name}@${pack.version}`);
-  }
-  if (pack.filename !== "skill-manage-0.1.0.tgz") {
-    throw new Error(`Unexpected tarball filename: ${pack.filename}`);
-  }
-  if (!Array.isArray(pack.files) || pack.files.length === 0) {
-    throw new Error("npm pack --json returned no package files");
-  }
-
-  const entries = pack.files.map(({ path }) => `package/${path.replace(/^package\//, "")}`);
-  const entrySet = new Set(entries);
-  const required = [
-    "package/bin/skill-manage.mjs",
-    "package/dist/server/entry.mjs",
-    "package/README.md",
-    "package/LICENSE",
-    "package/package.json",
-  ];
-  for (const path of required) {
-    if (!entrySet.has(path)) throw new Error(`Required package entry is missing: ${path}`);
-  }
-  if (!entries.some((path) => path.startsWith("package/dist/client/") && !path.endsWith("/"))) {
-    throw new Error("Required package client assets are missing");
-  }
-
-  const forbidden = entries.filter((path) => {
-    const lower = path.toLowerCase();
-    return lower.startsWith("package/src/")
-      || lower.startsWith("package/docs/")
-      || lower.startsWith("package/scripts/")
-      || /(^|\/)\.env(?:\.|$)/.test(lower)
-      || /(^|\/)(__tests__|tests?)(\/|$)/.test(lower)
-      || /\.(test|spec)\.[^/]+$/.test(lower);
-  });
-  if (forbidden.length > 0) {
-    throw new Error(`Forbidden package entries found:\n${forbidden.join("\n")}`);
-  }
-  if (new Set(entries).size !== entries.length) {
-    throw new Error("npm pack --json returned duplicate package entries");
-  }
-
-  return { pack, entries };
 }
 
 async function waitForRoot(url, outcome) {
@@ -138,20 +75,16 @@ async function fetchWithTimeout(url) {
 }
 
 let tempCwd;
-let tarballPath = expectedTarball;
+let packDirectory;
 let cli;
 let cliOutcome;
 let completed = false;
 
 try {
   tempCwd = await mkdtemp(join(tmpdir(), "skill-manage-package-smoke-"));
-  await unlink(expectedTarball).catch((error) => {
-    if (error.code !== "ENOENT") throw error;
-  });
-
-  const { stdout } = await runCaptured("npm", ["pack", "--json"], { cwd: packageRoot });
-  const { pack, entries } = inspectPack(parsePackJson(stdout));
-  tarballPath = resolve(packageRoot, pack.filename);
+  const packedRelease = await createValidatedPack(packageRoot);
+  packDirectory = packedRelease.directory;
+  const { pack, entries, tarballPath } = packedRelease;
 
   const port = await chooseFreePort();
   const url = `http://${HOST}:${port}`;
@@ -205,11 +138,11 @@ try {
       cleanupErrors.push(error);
     }
   }
-  for (const candidate of new Set([tarballPath, expectedTarball])) {
+  if (packDirectory) {
     try {
-      await unlink(candidate);
+      await rm(packDirectory, { recursive: true, force: true });
     } catch (error) {
-      if (error.code !== "ENOENT") cleanupErrors.push(error);
+      cleanupErrors.push(error);
     }
   }
   if (tempCwd) {

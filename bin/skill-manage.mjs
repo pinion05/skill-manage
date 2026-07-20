@@ -3,6 +3,7 @@
 import { spawn } from "node:child_process";
 import { access, readFile, realpath } from "node:fs/promises";
 import { createServer } from "node:net";
+import { constants } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -176,7 +177,8 @@ function exitCodeFor(outcome) {
   if (outcome.code !== null) {
     return outcome.code;
   }
-  return outcome.signal === "SIGINT" ? 130 : 143;
+  const signalNumber = constants.signals[outcome.signal];
+  return signalNumber === undefined ? 1 : 128 + signalNumber;
 }
 
 async function stopChild(child, outcome, signal = "SIGTERM") {
@@ -257,8 +259,8 @@ export async function main(args = process.argv.slice(2)) {
   };
   const onSigint = () => forwardSignal("SIGINT");
   const onSigterm = () => forwardSignal("SIGTERM");
-  process.once("SIGINT", onSigint);
-  process.once("SIGTERM", onSigterm);
+  process.on("SIGINT", onSigint);
+  process.on("SIGTERM", onSigterm);
 
   try {
     const url = `http://${HOST}:${port}`;
