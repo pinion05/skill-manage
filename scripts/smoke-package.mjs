@@ -2,6 +2,12 @@
 
 import { spawn } from "node:child_process";
 import { mkdtemp, rm, unlink } from "node:fs/promises";
+import {
+  childOutcome,
+  formatOutcome,
+  runCaptured,
+  terminateProcessTree,
+} from "./smoke-cleanup.mjs";
 import { createServer } from "node:net";
 import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
@@ -9,49 +15,12 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const HOST = "127.0.0.1";
 const START_TIMEOUT_MS = 30_000;
-const STOP_TIMEOUT_MS = 5_000;
 const POLL_INTERVAL_MS = 100;
 const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const expectedTarball = join(packageRoot, "skill-manage-0.1.0.tgz");
 
 function delay(milliseconds) {
   return new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds));
-}
-
-function childOutcome(child) {
-  return new Promise((resolveOutcome) => {
-    child.once("error", (error) => resolveOutcome({ error }));
-    child.once("exit", (code, signal) => resolveOutcome({ code, signal }));
-  });
-}
-
-function formatOutcome(outcome) {
-  if (outcome.error) return outcome.error.message;
-  if (outcome.signal) return `signal ${outcome.signal}`;
-  return `exit code ${outcome.code}`;
-}
-
-async function runCaptured(command, args, options = {}) {
-  const child = spawn(command, args, {
-    ...options,
-    stdio: ["ignore", "pipe", "pipe"],
-    shell: false,
-  });
-  let stdout = "";
-  let stderr = "";
-  child.stdout.setEncoding("utf8");
-  child.stderr.setEncoding("utf8");
-  child.stdout.on("data", (chunk) => { stdout += chunk; });
-  child.stderr.on("data", (chunk) => { stderr += chunk; });
-  const outcome = await childOutcome(child);
-  if (outcome.error || outcome.code !== 0) {
-    throw new Error([
-      `${command} ${args.join(" ")} failed (${formatOutcome(outcome)})`,
-      stdout.trim(),
-      stderr.trim(),
-    ].filter(Boolean).join("\n"));
-  }
-  return { stdout, stderr };
 }
 
 async function chooseFreePort() {
@@ -166,61 +135,6 @@ async function waitForRoot(url, outcome) {
 
 async function fetchWithTimeout(url) {
   return fetch(url, { signal: AbortSignal.timeout(5_000) });
-}
-
-function processGroupExists(pid) {
-  try {
-    process.kill(-pid, 0);
-    return true;
-  } catch (error) {
-    if (error.code === "ESRCH") return false;
-    throw error;
-  }
-}
-
-async function waitForCondition(condition, timeoutMs) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if (!condition()) return true;
-    await delay(Math.min(50, Math.max(0, deadline - Date.now())));
-  }
-  return !condition();
-}
-
-async function terminateProcessTree(child, outcome, { requireGraceful }) {
-  if (!child || child.pid === undefined || child.exitCode !== null || child.signalCode !== null) {
-    return outcome;
-  }
-
-  if (process.platform === "win32") {
-    await runCaptured("taskkill", ["/pid", String(child.pid), "/t", "/f"], { windowsHide: true });
-    const result = await Promise.race([outcome, delay(STOP_TIMEOUT_MS).then(() => null)]);
-    if (result === null) throw new Error("Timed out waiting for the Windows process tree to stop");
-    return result;
-  }
-
-  process.kill(-child.pid, "SIGINT");
-  const result = await Promise.race([outcome, delay(STOP_TIMEOUT_MS).then(() => null)]);
-  const groupStopped = await waitForCondition(
-    () => processGroupExists(child.pid),
-    result === null ? 0 : STOP_TIMEOUT_MS,
-  );
-  if (result !== null && groupStopped) {
-    const expected = result.signal === "SIGINT" || result.code === 0 || result.code === 130;
-    if (requireGraceful && !expected) {
-      throw new Error(`Packed CLI did not exit cleanly (${formatOutcome(result)})`);
-    }
-    return result;
-  }
-
-  try {
-    process.kill(-child.pid, "SIGKILL");
-  } catch (error) {
-    if (error.code !== "ESRCH") throw error;
-  }
-  await Promise.race([outcome, delay(STOP_TIMEOUT_MS)]);
-  await waitForCondition(() => processGroupExists(child.pid), STOP_TIMEOUT_MS);
-  throw new Error("Packed CLI process group required forced termination");
 }
 
 let tempCwd;
