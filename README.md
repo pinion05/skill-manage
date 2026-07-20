@@ -2,16 +2,41 @@
 
 Astro SSR와 Solid.js로 만든 macOS 로컬 코딩 에이전트 skill 인벤토리입니다. 공식 문서로 확인한 Skill 디렉터리를 기본 범위로 사용해 `SKILL.md`, `skills.md`, skill 심볼릭 링크를 읽고 검색·필터·상세 보기로 제공합니다.
 
-## 실행
+## 빠른 시작
+
+Node.js 22.12 이상에서 다음 명령을 실행합니다.
+
+```bash
+npx skill-manage
+```
+
+Skill Atlas가 사용 가능한 localhost port를 선택하고 브라우저를 엽니다. 기본 공식 경로 검색은 홈 아래 프로젝트를 한 번 조사하며, 명시적으로 선택하는 전체 파일시스템 검색은 파일 수에 따라 약 1분 이상 걸릴 수 있습니다. 이후 조회는 검색 mode별 프로세스 메모리 cache를 사용합니다.
+
+### CLI options
+
+| option | 설명 |
+| --- | --- |
+| `--port <number>` | 1–65535 범위의 localhost port를 지정합니다. |
+| `--no-open` | 브라우저를 자동으로 열지 않습니다. |
+| `-h`, `--help` | 도움말을 출력합니다. |
+| `-v`, `--version` | 버전을 출력합니다. |
+
+예를 들어 브라우저를 열지 않고 port 4400에서 실행하려면 다음과 같이 사용합니다.
+
+```bash
+npx skill-manage --no-open --port 4400
+```
+
+종료할 때는 Ctrl+C를 누릅니다.
+
+## 소스에서 개발
 
 ```bash
 npm install
 npm run dev
 ```
 
-브라우저에서 <http://127.0.0.1:4321>을 엽니다. 기본 공식 경로 검색은 홈 아래 프로젝트를 한 번 조사하며, 명시적으로 선택하는 전체 파일시스템 검색은 파일 수에 따라 약 1분 이상 걸릴 수 있습니다. 이후 조회는 검색 mode별 프로세스 메모리 cache를 사용합니다.
-
-production build:
+개발 서버는 <http://127.0.0.1:4321>에서 실행됩니다. production build를 로컬 소스에서 확인하려면 다음 명령을 사용합니다.
 
 ```bash
 npm run build

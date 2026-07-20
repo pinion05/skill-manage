@@ -1,7 +1,6 @@
 {
   "name": "skill-manage",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "scripts": {
     "dev": "astro dev",
@@ -11,7 +10,9 @@
     "check": "astro check",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verify": "npm run test && npm run check && npm run build"
+    "verify": "npm run test && npm run check && npm run build",
+    "prepack": "npm run verify",
+    "smoke:package": "node ./scripts/smoke-package.mjs"
   },
   "dependencies": {
     "@astrojs/node": "11.0.2",
@@ -31,5 +32,37 @@
     "jsdom": "29.1.1",
     "typescript": "6.0.3",
     "vitest": "4.1.10"
+  },
+  "description": "Local coding-agent Skill inventory and source atlas",
+  "license": "MIT",
+  "bin": {
+    "skill-manage": "./bin/skill-manage.mjs"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pinion05/skill-manage.git"
+  },
+  "homepage": "https://github.com/pinion05/skill-manage#readme",
+  "bugs": {
+    "url": "https://github.com/pinion05/skill-manage/issues"
+  },
+  "keywords": [
+    "agent-skills",
+    "coding-agents",
+    "skill-inventory",
+    "astro",
+    "cli"
+  ],
+  "publishConfig": {
+    "access": "public"
   }
 }
