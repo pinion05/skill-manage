@@ -36,7 +36,7 @@
   "description": "Local coding-agent Skill inventory and source atlas",
   "license": "MIT",
   "bin": {
-    "skill-manage": "./bin/skill-manage.mjs"
+    "skill-manage": "bin/skill-manage.mjs"
   },
   "files": [
     "bin",

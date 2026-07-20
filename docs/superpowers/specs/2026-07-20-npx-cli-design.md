@@ -76,7 +76,7 @@ The CLI is a small dependency-free ESM executable at `bin/skill-manage.mjs`.
 
 - remove `private: true`
 - retain `name: "skill-manage"`, `version: "0.1.0"`, `type: "module"`
-- add `bin.skill-manage = "./bin/skill-manage.mjs"`
+- add canonical npm mapping `bin.skill-manage = "bin/skill-manage.mjs"`
 - add `files = ["bin", "dist", "README.md", "LICENSE"]`
 - add `engines.node = ">=22.12.0"`
 - add MIT license, repository, homepage, bugs, keywords, and public publish config
