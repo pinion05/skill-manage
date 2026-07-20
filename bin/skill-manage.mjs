@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawn } from "node:child_process";
-import { access, readFile } from "node:fs/promises";
+import { access, readFile, realpath } from "node:fs/promises";
 import { createServer } from "node:net";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -141,12 +141,12 @@ async function waitUntilReady(url, outcome) {
   return { timeout: true };
 }
 
-function browserCommand(url) {
-  if (process.platform === "darwin") {
+export function browserCommand(url, platform = process.platform) {
+  if (platform === "darwin") {
     return ["open", [url]];
   }
-  if (process.platform === "win32") {
-    return ["rundll32.exe", ["url.dll,FileProtocolHandler", url]];
+  if (platform === "win32") {
+    return ["cmd.exe", ["/d", "/s", "/c", "start", "", url]];
   }
   return ["xdg-open", [url]];
 }
@@ -284,9 +284,20 @@ export async function main(args = process.argv.slice(2)) {
   }
 }
 
-const isExecutable = process.argv[1]
-  && import.meta.url === pathToFileURL(process.argv[1]).href;
-if (isExecutable) {
+async function isExecutableEntry() {
+  if (!process.argv[1]) return false;
+  try {
+    const [modulePath, executablePath] = await Promise.all([
+      realpath(fileURLToPath(import.meta.url)),
+      realpath(process.argv[1]),
+    ]);
+    return modulePath === executablePath;
+  } catch {
+    return import.meta.url === pathToFileURL(process.argv[1]).href;
+  }
+}
+
+if (await isExecutableEntry()) {
   main().then(
     (code) => {
       process.exitCode = code;

@@ -1,4 +1,7 @@
 import { spawnSync } from "node:child_process";
+import { mkdtemp, rm, symlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { createServer } from "node:net";
 import { describe, expect, it } from "vitest";
 
@@ -22,6 +25,37 @@ describe("skill-manage CLI", () => {
     const result = runCli(["--version"]);
     expect(result.status).toBe(0);
     expect(result.stdout.trim()).toBe("0.1.0");
+  });
+
+  it("runs through an npm-style executable symlink", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "skill-manage-bin-"));
+    const executable = join(directory, "skill-manage");
+    await symlink(resolve("bin/skill-manage.mjs"), executable);
+
+    try {
+      const result = spawnSync(process.execPath, [executable, "--help"], { encoding: "utf8" });
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain("Usage: npx skill-manage [options]");
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("uses the approved no-shell Windows browser command", () => {
+    const script = [
+      'import { browserCommand } from "./bin/skill-manage.mjs";',
+      'console.log(JSON.stringify(browserCommand("http://127.0.0.1:4321", "win32")));',
+    ].join("\n");
+    const result = spawnSync(process.execPath, ["--input-type=module", "--eval", script], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+    });
+
+    expect(result.status).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual([
+      "cmd.exe",
+      ["/d", "/s", "/c", "start", "", "http://127.0.0.1:4321"],
+    ]);
   });
 
   it.each([
