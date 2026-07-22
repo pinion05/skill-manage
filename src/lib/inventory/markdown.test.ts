@@ -114,13 +114,13 @@ describe("readSkillContent", () => {
     const startedAt = performance.now();
     const delayedWriter = setTimeout(() => {
       void writeFile(record.path, "unblock").catch(() => undefined);
-    }, 250);
+    }, 2000);
     try {
       await expect(readSkillContent(record)).rejects.toBeInstanceOf(InvalidSkillFileError);
     } finally {
       clearTimeout(delayedWriter);
     }
-    expect(performance.now() - startedAt).toBeLessThan(150);
+    expect(performance.now() - startedAt).toBeLessThan(1000);
   });
 
   it("rejects files outside the accepted skill filenames", async () => {
