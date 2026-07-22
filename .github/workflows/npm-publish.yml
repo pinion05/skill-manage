@@ -9,7 +9,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: read
+  contents: write   # GitHub Release/태그 생성용
 
 jobs:
   publish:
@@ -32,17 +32,32 @@ jobs:
         run: npm run verify
 
       - name: Publish only if version is new
+        id: publish
         run: |
           set -e
           LOCAL=$(node -p "require('./package.json').version")
           REMOTE=$(npm view skill-manage version 2>/dev/null || echo "none")
           echo "Local version:     $LOCAL"
           echo "Published version: $REMOTE"
+          echo "version=$LOCAL" >> "$GITHUB_OUTPUT"
           if [ "$LOCAL" = "$REMOTE" ]; then
             echo "::notice::skill-manage@$LOCAL already on npm — skipping publish."
             exit 0
           fi
           npm publish --access public
+          echo "published=true" >> "$GITHUB_OUTPUT"
           echo "::notice::Published skill-manage@$LOCAL to npm."
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        if: steps.publish.outputs.published == 'true'
+        run: |
+          VERSION="${{ steps.publish.outputs.version }}"
+          gh release create "v$VERSION" \
+            --target "${{ github.sha }}" \
+            --title "v$VERSION" \
+            --generate-notes
+          echo "::notice::Created GitHub Release v$VERSION."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
