@@ -1,0 +1,48 @@
+name: npm-publish
+
+# main에 push하면 자동 실행.
+# 같은 버전은 npm이 거부하므로, package.json 버전이 이미 npm에 존재하면 게시를 건너뛴다.
+# 새 버전을 올리고 push하면 자동으로 npm에 게시된다.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci
+
+      - name: Verify (test + check + build)
+        run: npm run verify
+
+      - name: Publish only if version is new
+        run: |
+          set -e
+          LOCAL=$(node -p "require('./package.json').version")
+          REMOTE=$(npm view skill-manage version 2>/dev/null || echo "none")
+          echo "Local version:     $LOCAL"
+          echo "Published version: $REMOTE"
+          if [ "$LOCAL" = "$REMOTE" ]; then
+            echo "::notice::skill-manage@$LOCAL already on npm — skipping publish."
+            exit 0
+          fi
+          npm publish --access public
+          echo "::notice::Published skill-manage@$LOCAL to npm."
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
