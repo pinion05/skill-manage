@@ -16,18 +16,15 @@ export function DuplicateSkillsPanel(props: Props) {
   const rows = (): RowData[] => {
     const out: RowData[] = [];
     for (const group of props.groups) {
-      group.installs.forEach((skill, index) => {
+      for (const skill of group.installs) {
         out.push({
           skill,
-          group:
-            index === 0
-              ? {
-                  label: `${group.name} (${group.installs.length})`,
-                  ariaSuffix: ` · ${group.name} · 중복`,
-                }
-              : undefined,
+          group: {
+            label: `${group.name} (${group.installs.length})`,
+            ariaSuffix: ` · ${group.name} · 중복`,
+          },
         });
-      });
+      }
     }
     return out;
   };

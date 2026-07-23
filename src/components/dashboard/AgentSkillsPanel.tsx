@@ -14,15 +14,12 @@ export function AgentSkillsPanel(props: Props) {
   const rows = (): RowData[] => {
     const out: RowData[] = [];
     for (const group of props.projection.groups) {
-      group.skills.forEach((entry, index) => {
+      for (const entry of group.skills) {
         out.push({
           skill: entry.skill,
-          group:
-            index === 0
-              ? { label: group.owner.name, ariaSuffix: ` · ${group.owner.name}` }
-              : undefined,
+          group: { label: group.owner.name, ariaSuffix: ` · ${group.owner.name}` },
         });
-      });
+      }
     }
     return out;
   };

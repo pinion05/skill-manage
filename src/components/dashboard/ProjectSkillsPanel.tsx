@@ -17,15 +17,12 @@ export function ProjectSkillsPanel(props: Props) {
     const out: RowData[] = [];
     for (const group of props.projection.groups) {
       const leaf = pathLeaf(group.directory);
-      group.skills.forEach((entry, index) => {
+      for (const entry of group.skills) {
         out.push({
           skill: entry.skill,
-          group:
-            index === 0
-              ? { label: leaf, ariaSuffix: ` · ${leaf}` }
-              : undefined,
+          group: { label: leaf, ariaSuffix: ` · ${leaf}` },
         });
-      });
+      }
     }
     return out;
   };

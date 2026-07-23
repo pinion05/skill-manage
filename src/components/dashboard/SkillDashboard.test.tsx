@@ -370,8 +370,8 @@ describe("SkillDashboard", () => {
     const projectTrigger = await screen.findByRole("button", { name: /project-only.*상세 보기/ });
     expect(projectTrigger).toBeInTheDocument();
     expect(screen.getByText("global-skill")).toBeInTheDocument();
-    // The project directory app is rendered as a group label.
-    expect(screen.getByText("app")).toBeInTheDocument();
+    // The project directory leaf is rendered as a group label on every row.
+    expect(screen.getAllByText("app").length).toBeGreaterThan(0);
 
     fireEvent.click(projectTrigger);
     expect(await screen.findByRole("dialog")).toHaveAccessibleName("project-only");
@@ -420,8 +420,9 @@ describe("SkillDashboard", () => {
     expect(screen.getByText("조건에 맞는 skill이 없습니다.")).toBeInTheDocument();
     expect(tab).toHaveAccessibleName("중복 설치 1");
     fireEvent.click(tab);
-    // Duplicate grid renders the group label and installs (AG Grid renders async).
-    expect(await screen.findByText("Alpha (2)")).toBeInTheDocument();
+    // Duplicate grid renders the group label on every install row (async).
+    const alphaLabels = await screen.findAllByText("Alpha (2)");
+    expect(alphaLabels.length).toBeGreaterThan(0);
 
     const trigger = await screen.findByRole("button", { name: /alpha.*상세 보기/ });
     fireEvent.click(trigger);
