@@ -29,7 +29,6 @@ const baseQuery: DashboardQuery = {
   search: "",
   kinds: [],
   roots: [],
-  recordTypes: [],
   sort: "name",
   direction: "asc",
 };
@@ -53,11 +52,11 @@ describe("applySkillQuery", () => {
     ]);
   });
 
-  it("combines kind, root, and record type filters", () => {
+  it("combines kind and root filters", () => {
     const records = [
       skill({ name: "alpha", configRoot: "/a", kind: "user/global-config" }),
       skill({ name: "beta", configRoot: "/a", kind: "app-bundled" }),
-      skill({ name: "docs", configRoot: "/b", recordType: "document" }),
+      skill({ name: "docs", configRoot: "/b", kind: "user/global-config" }),
     ];
 
     expect(
@@ -65,7 +64,6 @@ describe("applySkillQuery", () => {
         ...baseQuery,
         kinds: ["user/global-config"],
         roots: ["/a"],
-        recordTypes: ["skill"],
       }).map((x) => x.name),
     ).toEqual(["alpha"]);
   });

@@ -59,7 +59,7 @@ describe("defaultScanOptions", () => {
 });
 
 describe("scanInventory", () => {
-  it("finds skill definitions and separates skills.md documents", async () => {
+  it("finds skill.md files and ignores skills.md documents", async () => {
     const root = await makeFixture();
     const snapshot = await scanInventory({ roots: [root], home: root });
 
@@ -69,11 +69,12 @@ describe("scanInventory", () => {
       agents: [],
       roots: [],
     });
-    expect(snapshot.skills).toHaveLength(3);
+    // skills.md is ignored; only the two skill.md records remain.
+    expect(snapshot.skills).toHaveLength(2);
     expect(snapshot.skills.every((skill) => skill.sourceSightings.length === 0)).toBe(true);
     expect(snapshot.stats.skillDefinitions).toBe(2);
-    expect(snapshot.stats.documents).toBe(1);
-    expect(snapshot.stats.matchedFiles).toBe(3);
+    expect(snapshot.stats.documents).toBe(0);
+    expect(snapshot.stats.matchedFiles).toBe(2);
     expect(snapshot.skills.some((skill) => skill.name === "ignored")).toBe(false);
 
     const alpha = snapshot.skills.find((skill) => skill.name === "alpha");
@@ -91,8 +92,8 @@ describe("scanInventory", () => {
     expect(fallback?.description).toBe("");
     expect(fallback?.recordType).toBe("skill");
 
-    const document = snapshot.skills.find((skill) => skill.recordType === "document");
-    expect(document?.name).toBe("docs");
+    // skills.md documents are no longer scanned.
+    expect(snapshot.skills.some((skill) => skill.recordType === "document")).toBe(false);
   });
 
   it("records healthy and broken links without following them", async () => {

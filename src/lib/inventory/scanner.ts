@@ -35,7 +35,6 @@ export interface ScanOptions {
 }
 
 const SKILL_FILE = "skill.md";
-const SKILLS_DOCUMENT = "skills.md";
 const MAX_FRONTMATTER_BYTES = 1024 * 1024;
 const MAX_LINK_TARGET_DIRECTORIES = 10_000;
 const MAX_SCAN_DIRECTORIES = 500_000;
@@ -57,8 +56,7 @@ function stableId(value: string): string {
 }
 
 function isCandidateFile(name: string): boolean {
-  const lower = name.toLowerCase();
-  return lower === SKILL_FILE || lower === SKILLS_DOCUMENT;
+  return name.toLowerCase() === SKILL_FILE;
 }
 
 function isSkillLink(linkPath: string): boolean {
@@ -276,7 +274,7 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
           description,
           path: filePath,
           fileName,
-          recordType: fileName.toLowerCase() === SKILL_FILE ? "skill" : "document",
+          recordType: "skill",
           skillsRoot: findSkillsRoot(filePath),
           configRoot,
           agent: inferAgentLabel(configRoot, options.home),
