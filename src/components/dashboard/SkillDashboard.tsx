@@ -145,7 +145,7 @@ export function SkillDashboard() {
   return (
     <main class="app-shell">
       <p class="sr-only" aria-live="polite" aria-atomic="true">{refreshStatus()}</p>
-      <div class="scan-rail" classList={{ active: refreshing() }} aria-hidden="true"><i /></div>
+      <div class="scan-rail" classList={{ active: refreshing() || snapshot.loading }} aria-hidden="true"><i /></div>
       <header class="app-header">
         <div class="brand-block">
           <span class="brand-index">LOCAL / 001</span>
