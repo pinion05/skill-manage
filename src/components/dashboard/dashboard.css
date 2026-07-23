@@ -126,7 +126,7 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
 .skill-date { color: var(--muted); font: 0.68rem/1.2 var(--mono); }
 
 /* AG Grid (SkillTable) */
-.skill-grid { width: 100%; }
+.skill-grid { width: 100%; height: 70vh; min-height: 24rem; }
 .skill-grid.ag-theme-quartz { --ag-background-color: transparent; --ag-border-color: var(--line); --ag-header-background-color: var(--paper); --ag-row-hover-color: rgba(10, 132, 255, 0.05); --ag-row-height: 44px; --ag-cell-horizontal-padding: 0.6rem; }
 .skill-grid .ag-header-cell-text { color: var(--muted); }
 .skill-grid .ag-row.is-selected { background: rgba(10, 132, 255, 0.09); }

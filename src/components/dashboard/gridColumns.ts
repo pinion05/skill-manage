@@ -178,7 +178,6 @@ export function useSkillGrid(host: () => HTMLDivElement | undefined, options: Gr
     api = createGrid<RowData>(el, {
       columnDefs: baseColumns,
       rowData: options.skills(),
-      domLayout: "autoHeight",
       rowHeight: 44,
       getRowId: (params) => `${params.data.group?.label ?? ""}\0${params.data.skill.id}`,
       defaultColDef: { resizable: true, sortable: true },
