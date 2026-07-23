@@ -252,9 +252,12 @@ describe("SkillDashboard", () => {
     expect(await screen.findByRole("button", { name: /alpha 상세 보기/ })).toBeInTheDocument();
     expect(screen.getByText("1", { selector: 'strong[data-stat="skills"]' })).toBeInTheDocument();
     expect(screen.getAllByRole("columnheader")).toHaveLength(4);
-    expect(document.querySelector("td.skill-description")).toHaveAttribute("headers", "skill-column-description");
-    expect(document.querySelector("td.skill-source")).toHaveAttribute("headers", "skill-column-source");
-    expect(document.querySelector("td.skill-date")).toHaveAttribute("headers", "skill-column-modified");
+    // AG Grid renders cells inside .ag-cell wrappers; verify the description/source
+    // cell renderers populated the row with the expected content.
+    expect(document.querySelector(".ag-row .skill-description")).toHaveTextContent(
+      "브라우저를 제어하는 테스트 스킬",
+    );
+    expect(document.querySelector(".ag-row .skill-config-root")).toHaveTextContent("/Users/me/.codex");
     expect(screen.getByText("/Users/me/.codex", { selector: "code.skill-config-root" })).toBeInTheDocument();
 
     fireEvent.input(screen.getByRole("searchbox"), { target: { value: "없는 스킬" } });
@@ -317,7 +320,7 @@ describe("SkillDashboard", () => {
     expect(screen.queryByText("compatibility")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Skill 파일 1" }));
-    fireEvent.click(screen.getByRole("button", { name: /alpha 상세 보기/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /alpha 상세 보기/ }));
     expect(await screen.findByRole("heading", { name: "공식 소스 경로" })).toBeInTheDocument();
     expect(screen.getByText("/Users/me/.claude/skills/alpha/SKILL.md")).toBeInTheDocument();
     expect(screen.getByText("Claude Code")).toBeInTheDocument();
@@ -429,8 +432,9 @@ describe("SkillDashboard", () => {
     render(() => <SkillDashboard />);
 
     expect(await screen.findByRole("button", { name: "skill-00 상세 보기" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "skill-60 상세 보기" })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /skill-\d+ 상세 보기/ })).toHaveLength(61);
+    // AG Grid virtualizes rows; verify the full dataset is loaded via aria-rowcount
+    // (61 skill rows + 1 header row) and that no pagination navigation is rendered.
+    expect(screen.getByRole("treegrid")).toHaveAttribute("aria-rowcount", "62");
     expect(screen.queryByRole("navigation", { name: "Skill 목록 페이지" })).not.toBeInTheDocument();
   });
 

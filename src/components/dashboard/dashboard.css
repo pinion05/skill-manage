@@ -98,7 +98,7 @@
 .filter-summary button { grid-column: 1 / -1; justify-self: start; border: 0; padding: 0; background: none; color: var(--accent); cursor: pointer; font-size: 0.68rem; text-decoration: underline; text-underline-offset: 3px; }
 .filter-summary button:disabled { color: var(--muted); cursor: default; text-decoration: none; }
 
-.ledger { min-height: 30rem; }
+.ledger { position: relative; min-height: 30rem; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 th { position: sticky; top: 0; z-index: 2; padding: 0.72rem 0.8rem; border-bottom: 1px solid var(--ink); background: var(--paper); color: var(--muted); text-align: left; font: 700 0.62rem/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; }
@@ -119,12 +119,21 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
 .skill-identity > code { display: block; margin: 0.45rem 0 0 2.1rem; overflow: hidden; color: var(--muted); font: 0.64rem/1.25 var(--mono); text-overflow: ellipsis; white-space: nowrap; }
 .skill-description { color: #3d485b; line-height: 1.45; overflow: hidden; text-overflow: ellipsis; }
 .muted-value { color: var(--muted); font-style: italic; }
-.skill-source { display: grid; gap: 0.35rem; }
-.skill-source strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.76rem; }
-.skill-source span { color: var(--muted); font: 0.64rem/1.2 var(--mono); }
-.skill-config-root { display: block; overflow: hidden; color: var(--muted); font: 0.56rem/1.2 var(--mono); text-overflow: ellipsis; white-space: nowrap; }
+.skill-source { display: grid; gap: 0.3rem; }
+.skill-source strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.78rem; }
+.skill-source span { color: var(--muted); font: 0.66rem/1.25 var(--mono); }
+.skill-config-root { display: block; overflow: hidden; color: var(--muted); font: 0.62rem/1.3 var(--mono); text-overflow: ellipsis; white-space: nowrap; }
 .skill-date { color: var(--muted); font: 0.68rem/1.2 var(--mono); }
+
+/* AG Grid (SkillTable) */
+.skill-grid { width: 100%; }
+.skill-grid.ag-theme-quartz { --ag-background-color: transparent; --ag-border-color: var(--line); --ag-header-background-color: var(--paper); --ag-row-hover-color: rgba(10, 132, 255, 0.05); }
+.skill-grid .ag-header-cell-text { color: var(--muted); }
+.skill-grid .ag-row.is-selected { background: rgba(10, 132, 255, 0.09); }
+.skill-grid .ag-row.is-selected .skill-name { color: var(--accent); }
+.skill-grid .ag-cell { line-height: 1.35; }
 .empty-state { min-height: 28rem; display: grid; place-content: center; justify-items: center; gap: 0.5rem; text-align: center; }
+.empty-state.overlay { position: absolute; inset: 0; background: var(--paper); }
 .empty-state > span { color: var(--accent); font: 300 4rem/1 var(--display); }
 .empty-state p { color: var(--muted); font-size: 0.78rem; }
 
