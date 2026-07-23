@@ -120,10 +120,32 @@ export function SkillDashboard() {
     }
   };
 
+  const deleteSkill = async (skill: SkillRecord) => {
+    setActionError("");
+    try {
+      const response = await fetch(
+        `/api/skills/delete?id=${encodeURIComponent(skill.id)}&mode=${scanMode()}`,
+        { method: "DELETE" },
+      );
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error ?? "skill 삭제에 실패했습니다.");
+      // Drop the deleted skill from the cached snapshot and close the detail.
+      const prev = snapshot();
+      if (prev) {
+        mutate({ ...prev, skills: prev.skills.filter((s) => s.id !== skill.id) });
+      }
+      if (selected()?.id === skill.id) setSelected();
+      setRefreshStatus(`${skill.name}을(를) 삭제했습니다.`);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "skill 삭제에 실패했습니다.");
+      throw error;
+    }
+  };
+
   return (
     <main class="app-shell">
       <p class="sr-only" aria-live="polite" aria-atomic="true">{refreshStatus()}</p>
-      <div class="scan-rail" classList={{ active: refreshing() }} aria-hidden="true"><i /></div>
+      <div class="scan-rail" classList={{ active: refreshing() || snapshot.loading }} aria-hidden="true"><i /></div>
       <header class="app-header">
         <div class="brand-block">
           <span class="brand-index">LOCAL / 001</span>
@@ -329,6 +351,7 @@ export function SkillDashboard() {
             duplicates={selectedDuplicates()}
             returnFocus={detailTrigger}
             onClose={() => setSelected()}
+            onDelete={deleteSkill}
           />
         )}
       </Show>

@@ -13,6 +13,7 @@ interface Props {
   duplicates: SkillRecord[];
   returnFocus?: HTMLElement;
   onClose: () => void;
+  onDelete?: (skill: SkillRecord) => Promise<void>;
 }
 
 async function fetchContent(source: { id: string; mode: ScanMode }): Promise<SkillContent> {
@@ -41,8 +42,21 @@ export function SkillDetail(props: Props) {
     fetchContent,
   );
   const [copyState, setCopyState] = createSignal("경로 복사");
+  const [confirmingDelete, setConfirmingDelete] = createSignal(false);
+  const [deleting, setDeleting] = createSignal(false);
   let panel!: HTMLElement;
   let heading!: HTMLHeadingElement;
+
+  const handleDelete = async () => {
+    if (!props.onDelete) return;
+    setDeleting(true);
+    try {
+      await props.onDelete(props.skill);
+      props.onClose();
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Escape") {
@@ -120,6 +134,42 @@ export function SkillDetail(props: Props) {
           <div><dt>수정</dt><dd>{dateFormatter.format(new Date(props.skill.modifiedAt))}</dd></div>
           <div class="detail-config-root"><dt>설정 루트</dt><dd><code>{props.skill.configRoot}</code></dd></div>
         </dl>
+
+        <Show when={props.onDelete}>
+          <div class="detail-actions">
+            <Show
+              when={!confirmingDelete()}
+              fallback={
+                <div class="delete-confirm" role="alertdialog" aria-label="스킬 삭제 확인">
+                  <strong>{props.skill.name}을(를) 삭제합니다</strong>
+                  <p>이 작업은 되돌릴 수 없습니다. 파일이 영구 삭제됩니다.</p>
+                  <code>{props.skill.path}</code>
+                  <div class="delete-confirm-buttons">
+                    <button
+                      type="button"
+                      class="danger"
+                      disabled={deleting()}
+                      onClick={handleDelete}
+                    >
+                      {deleting() ? "삭제 중…" : "삭제 확인"}
+                    </button>
+                    <button type="button" onClick={() => setConfirmingDelete(false)} disabled={deleting()}>
+                      취소
+                    </button>
+                  </div>
+                </div>
+              }
+            >
+              <button
+                type="button"
+                class="detail-delete-button"
+                onClick={() => setConfirmingDelete(true)}
+              >
+                스킬 삭제
+              </button>
+            </Show>
+          </div>
+        </Show>
 
         <section class="detail-path" aria-label="파일 경로">
           <div><span>ABSOLUTE PATH</span><button type="button" onClick={copyPath}>{copyState()}</button></div>
