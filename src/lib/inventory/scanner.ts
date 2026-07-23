@@ -4,6 +4,7 @@ import { access, lstat, open, opendir, readlink, realpath, stat } from "node:fs/
 import os from "node:os";
 import path from "node:path";
 import matter from "gray-matter";
+import { encode } from "gpt-tokenizer";
 import { classifyPath, findSkillsRoot, inferAgentLabel, inferConfigRoot } from "./classify";
 import type {
   InventoryRoot,
@@ -12,6 +13,16 @@ import type {
   SkillLink,
   SkillRecord,
 } from "./types";
+
+/** Estimate GPT-style token count for a string (o200k_base, offline). */
+function countTokens(text: string): number {
+  if (!text) return 0;
+  try {
+    return encode(text).length;
+  } catch {
+    return 0;
+  }
+}
 
 export interface ScanOptions {
   roots: string[];
@@ -24,7 +35,6 @@ export interface ScanOptions {
 }
 
 const SKILL_FILE = "skill.md";
-const SKILLS_DOCUMENT = "skills.md";
 const MAX_FRONTMATTER_BYTES = 1024 * 1024;
 const MAX_LINK_TARGET_DIRECTORIES = 10_000;
 const MAX_SCAN_DIRECTORIES = 500_000;
@@ -46,8 +56,7 @@ function stableId(value: string): string {
 }
 
 function isCandidateFile(name: string): boolean {
-  const lower = name.toLowerCase();
-  return lower === SKILL_FILE || lower === SKILLS_DOCUMENT;
+  return name.toLowerCase() === SKILL_FILE;
 }
 
 function isSkillLink(linkPath: string): boolean {
@@ -235,6 +244,8 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
         }
         let name = path.basename(path.dirname(filePath));
         let description = "";
+        let contentsTokens = 0;
+        let descriptionTokens = 0;
         if (fileStat.size > MAX_FRONTMATTER_BYTES) {
           recordIssue("FILE_TOO_LARGE", filePath);
         } else {
@@ -249,6 +260,8 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
             if (typeof parsed.data.description === "string") {
               description = parsed.data.description.trim();
             }
+            contentsTokens = countTokens(parsed.content);
+            descriptionTokens = countTokens(description);
           } catch {
             recordIssue("FRONTMATTER_PARSE", filePath);
           }
@@ -261,7 +274,7 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
           description,
           path: filePath,
           fileName,
-          recordType: fileName.toLowerCase() === SKILL_FILE ? "skill" : "document",
+          recordType: "skill",
           skillsRoot: findSkillsRoot(filePath),
           configRoot,
           agent: inferAgentLabel(configRoot, options.home),
@@ -271,6 +284,8 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
           device: fileStat.dev,
           inode: fileStat.ino,
           sourceSightings: [],
+          contentsTokens,
+          descriptionTokens,
         });
       } finally {
         await handle.close();

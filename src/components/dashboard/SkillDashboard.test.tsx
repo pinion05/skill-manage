@@ -33,6 +33,8 @@ function inventory(name = "alpha"): InventorySnapshot {
         device: 1,
         inode: 2,
         sourceSightings: [],
+        contentsTokens: 0,
+        descriptionTokens: 0,
       },
     ],
     links: [
@@ -220,6 +222,8 @@ function skillViewInventory(): InventorySnapshot {
       kind: "project/source-local",
       inode: 4,
       sourceSightings: [],
+      contentsTokens: 0,
+      descriptionTokens: 0,
     },
   ];
   snapshot.stats.matchedFiles = 3;
@@ -251,7 +255,7 @@ describe("SkillDashboard", () => {
     expect(screen.getByText("파일시스템을 읽는 중")).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: /alpha 상세 보기/ })).toBeInTheDocument();
     expect(screen.getByText("1", { selector: 'strong[data-stat="skills"]' })).toBeInTheDocument();
-    expect(screen.getAllByRole("columnheader")).toHaveLength(4);
+    expect(screen.getAllByRole("columnheader")).toHaveLength(6);
     // AG Grid renders cells inside .ag-cell wrappers; verify the description/source
     // cell renderers populated the row with the expected content.
     expect(document.querySelector(".ag-row .skill-description")).toHaveTextContent(
@@ -353,64 +357,26 @@ describe("SkillDashboard", () => {
     expect(await screen.findByRole("button", { name: "에이전트 1" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "프로젝트 2" })).toBeInTheDocument();
 
+    // Agent tab: skills are rendered in a single AG Grid, grouped by agent label column.
     fireEvent.click(screen.getByRole("button", { name: "에이전트 1" }));
-    expect(screen.getByRole("heading", { name: "Claude Code" })).toBeInTheDocument();
-    const agentToggle = screen.getByRole("button", { name: "Claude Code Skill 목록 토글" });
-    const agentGroup = agentToggle.closest("details")!;
-    const globalSkillTrigger = screen.getByRole("button", { name: /global-skill.*상세 보기/ });
-    expect(agentGroup).not.toHaveAttribute("open");
-    expect(globalSkillTrigger).not.toBeVisible();
-
-    fireEvent.click(agentToggle);
-    expect(agentGroup).toHaveAttribute("open");
-    expect(globalSkillTrigger).toBeVisible();
-    expect(
-      screen.queryByText("/Users/me/dev/app/.copilot/skills/global-skill/SKILL.md"),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText("GitHub Copilot")).not.toBeInTheDocument();
+    const agentTrigger = await screen.findByRole("button", { name: /global-skill.*상세 보기/ });
+    expect(agentTrigger).toBeInTheDocument();
+    // Project-only and document-only records are excluded from the agent (non-project) view.
     expect(screen.queryByText("project-only")).not.toBeInTheDocument();
     expect(screen.queryByText("document-only")).not.toBeInTheDocument();
 
-    fireEvent.click(agentToggle);
-    expect(agentGroup).not.toHaveAttribute("open");
-    expect(globalSkillTrigger).not.toBeVisible();
-
+    // Project tab: directory-grouped grid merges aliases by physical inode.
     fireEvent.click(screen.getByRole("button", { name: "프로젝트 2" }));
-    const projectToggle = screen.getByRole("button", { name: "app 프로젝트 Skill 목록 토글" });
-    expect(projectToggle.querySelector(":scope > div")).toBeNull();
-    expect(projectToggle.querySelector(":scope > h3")).not.toBeNull();
-    const project = projectToggle.closest("details")!;
-    const projectSkillTrigger = within(project).getByRole("button", {
-      name: /project-only.*상세 보기/,
-    });
-    expect(project).not.toHaveAttribute("open");
-    expect(projectSkillTrigger).not.toBeVisible();
+    const projectTrigger = await screen.findByRole("button", { name: /project-only.*상세 보기/ });
+    expect(projectTrigger).toBeInTheDocument();
+    expect(screen.getByText("global-skill")).toBeInTheDocument();
+    // The project directory leaf is rendered as a group label on every row.
+    expect(screen.getAllByText("app").length).toBeGreaterThan(0);
 
-    fireEvent.click(projectToggle);
-    expect(project).toHaveAttribute("open");
-    expect(projectSkillTrigger).toBeVisible();
-    expect(within(project).getByText("/Users/me/dev/app")).toBeInTheDocument();
-    expect(within(project).getAllByText("global-skill")).toHaveLength(1);
-    expect(within(project).getAllByText("project-only")).toHaveLength(1);
-    expect(within(project).getByText(/2 SKILLS · 3 AGENTS/)).toBeInTheDocument();
-
-    const globalRow = within(project)
-      .getByRole("button", { name: /global-skill.*상세 보기/ })
-      .closest("li")!;
-    expect(within(globalRow).getByText("GitHub Copilot")).toBeInTheDocument();
-    expect(
-      within(globalRow).getByText("/Users/me/dev/app/.copilot/skills/global-skill/SKILL.md"),
-    ).toBeInTheDocument();
-    expect(within(globalRow).queryByText("Claude Code")).not.toBeInTheDocument();
-
-    const trigger = projectSkillTrigger;
-    const projectOnlyRow = trigger.closest("li")!;
-    expect(within(projectOnlyRow).getByText("Claude Code")).toBeInTheDocument();
-    expect(within(projectOnlyRow).getByText("Cursor")).toBeInTheDocument();
-    fireEvent.click(trigger);
+    fireEvent.click(projectTrigger);
     expect(await screen.findByRole("dialog")).toHaveAccessibleName("project-only");
     fireEvent.keyDown(document, { key: "Escape" });
-    await waitFor(() => expect(trigger).toHaveFocus());
+    await waitFor(() => expect(projectTrigger).toHaveFocus());
   });
 
   it("renders every filtered skill in one ledger without pagination", async () => {
@@ -454,14 +420,11 @@ describe("SkillDashboard", () => {
     expect(screen.getByText("조건에 맞는 skill이 없습니다.")).toBeInTheDocument();
     expect(tab).toHaveAccessibleName("중복 설치 1");
     fireEvent.click(tab);
-    expect(screen.getByRole("heading", { name: "Alpha" })).toBeInTheDocument();
-    expect(screen.getByText("2곳 설치")).toBeInTheDocument();
-    expect(screen.getByText("/Users/me/.codex", { selector: "code.duplicate-config-root" })).toBeInTheDocument();
-    expect(screen.getByText("/Users/me/.claude/skills/alpha/SKILL.md")).toBeInTheDocument();
+    // Duplicate grid renders the group label on every install row (async).
+    const alphaLabels = await screen.findAllByText("Alpha (2)");
+    expect(alphaLabels.length).toBeGreaterThan(0);
 
-    const trigger = screen.getByRole("button", {
-      name: "alpha · Claude Code · 사용자 설정 · /Users/me/.claude · /Users/me/.claude/skills/alpha/SKILL.md 상세 보기",
-    });
+    const trigger = await screen.findByRole("button", { name: /alpha.*상세 보기/ });
     fireEvent.click(trigger);
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveAccessibleName("alpha");

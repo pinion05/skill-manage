@@ -1,10 +1,9 @@
-import type { SkillKind, SkillRecord, SkillRecordType } from "../inventory/types";
+import type { SkillKind, SkillRecord } from "../inventory/types";
 
 export interface DashboardQuery {
   search: string;
   kinds: SkillKind[];
   roots: string[];
-  recordTypes: SkillRecordType[];
   sort: "name" | "path" | "modified";
   direction: "asc" | "desc";
 }
@@ -18,12 +17,10 @@ export function applySkillQuery(records: SkillRecord[], query: DashboardQuery): 
   const search = query.search.trim().toLocaleLowerCase();
   const kinds = new Set(query.kinds);
   const roots = new Set(query.roots);
-  const recordTypes = new Set(query.recordTypes);
 
   const filtered = records.filter((record) => {
     if (kinds.size > 0 && !kinds.has(record.kind)) return false;
     if (roots.size > 0 && !roots.has(record.configRoot)) return false;
-    if (recordTypes.size > 0 && !recordTypes.has(record.recordType)) return false;
     if (!search) return true;
 
     const haystack = [

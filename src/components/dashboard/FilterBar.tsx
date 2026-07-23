@@ -1,6 +1,6 @@
 import { For } from "solid-js";
 import type { DashboardQuery } from "../../lib/dashboard/filter";
-import type { InventoryRoot, SkillKind, SkillRecordType } from "../../lib/inventory/types";
+import type { InventoryRoot, SkillKind } from "../../lib/inventory/types";
 
 interface Props {
   query: DashboardQuery;
@@ -9,7 +9,6 @@ interface Props {
   onSearch: (value: string) => void;
   onKind: (value: SkillKind | "") => void;
   onRoot: (value: string) => void;
-  onRecordType: (value: SkillRecordType | "") => void;
   onSort: (sort: DashboardQuery["sort"], direction: DashboardQuery["direction"]) => void;
   onReset: () => void;
 }
@@ -32,14 +31,12 @@ export function kindLabel(kind: SkillKind): string {
 export function FilterBar(props: Props) {
   const selectedKind = () => props.query.kinds[0] ?? "";
   const selectedRoot = () => props.query.roots[0] ?? "";
-  const selectedRecordType = () => props.query.recordTypes[0] ?? "";
   const selectedSort = () => `${props.query.sort}:${props.query.direction}`;
   const hasFilters = () =>
     Boolean(
       props.query.search ||
         props.query.kinds.length ||
-        props.query.roots.length ||
-        props.query.recordTypes.length,
+        props.query.roots.length,
     );
 
   return (
@@ -56,18 +53,6 @@ export function FilterBar(props: Props) {
             autocomplete="off"
           />
         </span>
-      </label>
-
-      <label>
-        <span class="field-label">파일 유형</span>
-        <select
-          value={selectedRecordType()}
-          onChange={(event) => props.onRecordType(event.currentTarget.value as SkillRecordType | "")}
-        >
-          <option value="">전체 파일</option>
-          <option value="skill">SKILL.md</option>
-          <option value="document">skills.md 문서</option>
-        </select>
       </label>
 
       <label>

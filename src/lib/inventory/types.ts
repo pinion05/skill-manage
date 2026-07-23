@@ -72,6 +72,8 @@ export interface SkillRecord {
   device: number;
   inode: number;
   sourceSightings: SkillSourceSighting[];
+  contentsTokens: number;
+  descriptionTokens: number;
 }
 
 export interface SkillLink {

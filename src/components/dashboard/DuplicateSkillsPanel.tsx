@@ -1,15 +1,39 @@
-import { For, Show } from "solid-js";
+import { Show } from "solid-js";
 import type { DuplicateSkillGroup } from "../../lib/dashboard/duplicate-skills";
 import type { SkillRecord } from "../../lib/inventory/types";
-import { kindLabel } from "./FilterBar";
+import { useSkillGrid, type RowData } from "./gridColumns";
 
 interface Props {
   groups: DuplicateSkillGroup[];
-  onSelect: (skill: SkillRecord, trigger: HTMLButtonElement) => void;
+  onSelect: (skill: SkillRecord, trigger: HTMLElement) => void;
 }
 
 export function DuplicateSkillsPanel(props: Props) {
+  let host: HTMLDivElement | undefined;
+
   const installCount = () => props.groups.reduce((total, group) => total + group.installs.length, 0);
+
+  const rows = (): RowData[] => {
+    const out: RowData[] = [];
+    for (const group of props.groups) {
+      for (const skill of group.installs) {
+        out.push({
+          skill,
+          group: {
+            label: `${group.name} (${group.installs.length})`,
+            ariaSuffix: ` · ${group.name} · 중복`,
+          },
+        });
+      }
+    }
+    return out;
+  };
+
+  useSkillGrid(() => host, {
+    skills: rows,
+    onSelect: props.onSelect,
+    groupHeaderName: "중복 이름",
+  });
 
   return (
     <section class="duplicate-skills" aria-labelledby="duplicate-skills-title">
@@ -34,44 +58,7 @@ export function DuplicateSkillsPanel(props: Props) {
           </div>
         }
       >
-        <div class="duplicate-group-list">
-          <For each={props.groups}>
-            {(group) => (
-              <article class="duplicate-group">
-                <header>
-                  <h3>{group.name}</h3>
-                  <span>{group.installs.length.toLocaleString("ko-KR")}곳 설치</span>
-                </header>
-                <ul>
-                  <For each={group.installs}>
-                    {(skill) => (
-                      <li>
-                        <button
-                          type="button"
-                          aria-label={`${skill.name} · ${skill.agent} · ${kindLabel(skill.kind)} · ${skill.configRoot} · ${skill.path} 상세 보기`}
-                          onClick={(event) => props.onSelect(skill, event.currentTarget)}
-                        >
-                          <span class="duplicate-install-meta">
-                            <strong>{skill.agent}</strong>
-                            <span>{kindLabel(skill.kind)}</span>
-                          </span>
-                          <span class="duplicate-path-field">
-                            <small>설정 루트</small>
-                            <code class="duplicate-config-root">{skill.configRoot}</code>
-                          </span>
-                          <span class="duplicate-path-field">
-                            <small>SKILL PATH</small>
-                            <code>{skill.path}</code>
-                          </span>
-                        </button>
-                      </li>
-                    )}
-                  </For>
-                </ul>
-              </article>
-            )}
-          </For>
-        </div>
+        <div class="ag-theme-quartz skill-grid" ref={host}></div>
       </Show>
     </section>
   );

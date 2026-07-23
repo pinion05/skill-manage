@@ -115,7 +115,7 @@ export function SkillDetail(props: Props) {
         <dl class="detail-meta">
           <div><dt>에이전트</dt><dd>{props.skill.agent}</dd></div>
           <div><dt>성격</dt><dd>{kindLabel(props.skill.kind)}</dd></div>
-          <div><dt>파일</dt><dd>{props.skill.recordType === "skill" ? "SKILL.md" : "skills.md 문서"}</dd></div>
+          <div><dt>파일</dt><dd>SKILL.md</dd></div>
           <div><dt>크기</dt><dd>{props.skill.size.toLocaleString("ko-KR")} B</dd></div>
           <div><dt>수정</dt><dd>{dateFormatter.format(new Date(props.skill.modifiedAt))}</dd></div>
           <div class="detail-config-root"><dt>설정 루트</dt><dd><code>{props.skill.configRoot}</code></dd></div>

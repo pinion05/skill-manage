@@ -10,7 +10,6 @@ import type {
   ScanMode,
   SkillKind,
   SkillRecord,
-  SkillRecordType,
 } from "../../lib/inventory/types";
 import { AgentSkillsPanel } from "./AgentSkillsPanel";
 import { DuplicateSkillsPanel } from "./DuplicateSkillsPanel";
@@ -28,7 +27,6 @@ const INITIAL_QUERY: DashboardQuery = {
   search: "",
   kinds: [],
   roots: [],
-  recordTypes: [],
   sort: "name",
   direction: "asc",
 };
@@ -268,9 +266,6 @@ export function SkillDashboard() {
                   onSearch={(search) => updateQuery({ search })}
                   onKind={(kind: SkillKind | "") => updateQuery({ kinds: kind ? [kind] : [] })}
                   onRoot={(root) => updateQuery({ roots: root ? [root] : [] })}
-                  onRecordType={(recordType: SkillRecordType | "") =>
-                    updateQuery({ recordTypes: recordType ? [recordType] : [] })
-                  }
                   onSort={(sort, direction) => updateQuery({ sort, direction })}
                   onReset={() => setQuery(INITIAL_QUERY)}
                 />
