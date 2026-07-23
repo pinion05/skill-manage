@@ -10,8 +10,11 @@ import {
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createServer } from "node:net";
+import { readFileSync } from "node:fs";
 import type { Readable } from "node:stream";
 import { describe, expect, it } from "vitest";
+
+const PACKAGE_VERSION = (JSON.parse(readFileSync(resolve("package.json"), "utf8")) as { version: string }).version;
 
 type CliChild = ChildProcess & { stdout: Readable; stderr: Readable };
 
@@ -133,7 +136,7 @@ describe("skill-manage CLI", () => {
   it("prints the package version", () => {
     const result = runCli(["--version"]);
     expect(result.status).toBe(0);
-    expect(result.stdout.trim()).toBe("0.1.0");
+    expect(result.stdout.trim()).toBe(PACKAGE_VERSION);
   });
 
   it("runs through an npm-style executable symlink", async () => {
