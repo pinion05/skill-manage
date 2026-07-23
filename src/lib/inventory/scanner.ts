@@ -14,7 +14,7 @@ import type {
   SkillRecord,
 } from "./types";
 
-/** Estimate GPT-style token count for a string (cl100k_base, offline). */
+/** Estimate GPT-style token count for a string (o200k_base, offline). */
 function countTokens(text: string): number {
   if (!text) return 0;
   try {
