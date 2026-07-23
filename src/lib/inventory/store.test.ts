@@ -22,6 +22,8 @@ function snapshot(
     device: 1,
     inode: 2,
     sourceSightings: [],
+    contentsTokens: 0,
+    descriptionTokens: 0,
   };
   return {
     scanMode,

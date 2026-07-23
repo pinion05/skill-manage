@@ -105,6 +105,34 @@ export function SkillTable(props: Props) {
         return time;
       },
     },
+    {
+      headerName: "본문 토큰",
+      field: "contentsTokens",
+      width: 110,
+      type: "numericColumn",
+      cellRenderer: (params: ICellRendererParams<SkillRecord>) => {
+        const skill = params.data;
+        if (!skill) return "";
+        const span = document.createElement("span");
+        span.className = "token-count";
+        span.textContent = (skill.contentsTokens ?? 0).toLocaleString("ko-KR");
+        return span;
+      },
+    },
+    {
+      headerName: "설명 토큰",
+      field: "descriptionTokens",
+      width: 110,
+      type: "numericColumn",
+      cellRenderer: (params: ICellRendererParams<SkillRecord>) => {
+        const skill = params.data;
+        if (!skill) return "";
+        const span = document.createElement("span");
+        span.className = "token-count";
+        span.textContent = (skill.descriptionTokens ?? 0).toLocaleString("ko-KR");
+        return span;
+      },
+    },
   ];
 
   onMount(() => {

@@ -33,6 +33,8 @@ function inventory(name = "alpha"): InventorySnapshot {
         device: 1,
         inode: 2,
         sourceSightings: [],
+        contentsTokens: 0,
+        descriptionTokens: 0,
       },
     ],
     links: [
@@ -220,6 +222,8 @@ function skillViewInventory(): InventorySnapshot {
       kind: "project/source-local",
       inode: 4,
       sourceSightings: [],
+      contentsTokens: 0,
+      descriptionTokens: 0,
     },
   ];
   snapshot.stats.matchedFiles = 3;
@@ -251,7 +255,7 @@ describe("SkillDashboard", () => {
     expect(screen.getByText("파일시스템을 읽는 중")).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: /alpha 상세 보기/ })).toBeInTheDocument();
     expect(screen.getByText("1", { selector: 'strong[data-stat="skills"]' })).toBeInTheDocument();
-    expect(screen.getAllByRole("columnheader")).toHaveLength(4);
+    expect(screen.getAllByRole("columnheader")).toHaveLength(6);
     // AG Grid renders cells inside .ag-cell wrappers; verify the description/source
     // cell renderers populated the row with the expected content.
     expect(document.querySelector(".ag-row .skill-description")).toHaveTextContent(

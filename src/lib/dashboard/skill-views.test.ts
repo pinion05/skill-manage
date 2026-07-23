@@ -42,6 +42,8 @@ function skill(overrides: Partial<SkillRecord> = {}): SkillRecord {
     device: 1,
     inode: 1,
     sourceSightings: [],
+    contentsTokens: 0,
+    descriptionTokens: 0,
     ...overrides,
   };
 }

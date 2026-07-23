@@ -4,6 +4,7 @@ import { access, lstat, open, opendir, readlink, realpath, stat } from "node:fs/
 import os from "node:os";
 import path from "node:path";
 import matter from "gray-matter";
+import { encode } from "gpt-tokenizer";
 import { classifyPath, findSkillsRoot, inferAgentLabel, inferConfigRoot } from "./classify";
 import type {
   InventoryRoot,
@@ -12,6 +13,16 @@ import type {
   SkillLink,
   SkillRecord,
 } from "./types";
+
+/** Estimate GPT-style token count for a string (cl100k_base, offline). */
+function countTokens(text: string): number {
+  if (!text) return 0;
+  try {
+    return encode(text).length;
+  } catch {
+    return 0;
+  }
+}
 
 export interface ScanOptions {
   roots: string[];
@@ -235,6 +246,8 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
         }
         let name = path.basename(path.dirname(filePath));
         let description = "";
+        let contentsTokens = 0;
+        let descriptionTokens = 0;
         if (fileStat.size > MAX_FRONTMATTER_BYTES) {
           recordIssue("FILE_TOO_LARGE", filePath);
         } else {
@@ -249,6 +262,8 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
             if (typeof parsed.data.description === "string") {
               description = parsed.data.description.trim();
             }
+            contentsTokens = countTokens(parsed.content);
+            descriptionTokens = countTokens(description);
           } catch {
             recordIssue("FRONTMATTER_PARSE", filePath);
           }
@@ -271,6 +286,8 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
           device: fileStat.dev,
           inode: fileStat.ino,
           sourceSightings: [],
+          contentsTokens,
+          descriptionTokens,
         });
       } finally {
         await handle.close();
