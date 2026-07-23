@@ -147,4 +147,29 @@ describe("createInventoryStore", () => {
     await expect(store.getSkillContent("skill-a")).resolves.toBe(expected);
     expect(loadContent).toHaveBeenCalledWith(expect.objectContaining({ id: "skill-a" }));
   });
+
+  it("deletes a skill file and removes it from the cached snapshot", async () => {
+    const removed: string[] = [];
+    const removeFile = vi.fn(async (filePath: string) => {
+      removed.push(filePath);
+    });
+    const store = createInventoryStore({ scan: async () => snapshot(), removeFile });
+
+    await store.getInventory();
+    const deleted = await store.deleteSkill("skill-a");
+
+    expect(deleted).toMatchObject({ id: "skill-a", name: "alpha" });
+    expect(removeFile).toHaveBeenCalledWith("/tmp/skill-a/SKILL.md");
+    const after = await store.getInventory();
+    expect(after.skills).toHaveLength(0);
+  });
+
+  it("rejects deletion of an unknown skill id", async () => {
+    const removeFile = vi.fn(async () => {});
+    const store = createInventoryStore({ scan: async () => snapshot(), removeFile });
+
+    await store.getInventory();
+    await expect(store.deleteSkill("unknown")).rejects.toBeInstanceOf(SkillNotFoundError);
+    expect(removeFile).not.toHaveBeenCalled();
+  });
 });

@@ -1,3 +1,4 @@
+import { unlink } from "node:fs/promises";
 import { readSkillContent } from "./markdown";
 import { scanInventoryForMode } from "./scan-mode";
 import type { InventorySnapshot, ScanMode, SkillContent, SkillRecord } from "./types";
@@ -12,12 +13,20 @@ export class SkillNotFoundError extends Error {
 export interface InventoryStoreDependencies {
   scan?: (mode: ScanMode) => Promise<InventorySnapshot>;
   loadContent?: (record: SkillRecord) => Promise<SkillContent>;
+  removeFile?: (path: string) => Promise<void>;
+}
+
+export interface DeletedSkill {
+  id: string;
+  name: string;
+  path: string;
 }
 
 export interface InventoryStore {
   getInventory: (mode?: ScanMode) => Promise<InventorySnapshot>;
   refreshInventory: (mode?: ScanMode) => Promise<InventorySnapshot>;
   getSkillContent: (id: string, mode?: ScanMode) => Promise<SkillContent>;
+  deleteSkill: (id: string, mode?: ScanMode) => Promise<DeletedSkill>;
 }
 
 export function createInventoryStore(
@@ -25,6 +34,7 @@ export function createInventoryStore(
 ): InventoryStore {
   const scan = dependencies.scan ?? scanInventoryForMode;
   const loadContent = dependencies.loadContent ?? readSkillContent;
+  const removeFile = dependencies.removeFile ?? ((filePath) => unlink(filePath));
   const snapshots = new Map<ScanMode, InventorySnapshot>();
   const inFlight = new Map<ScanMode, Promise<InventorySnapshot>>();
 
@@ -54,6 +64,19 @@ export function createInventoryStore(
       const record = current.skills.find((skill) => skill.id === id);
       if (!record) throw new SkillNotFoundError(id);
       return loadContent(record);
+    },
+    deleteSkill: async (id: string, mode = "official") => {
+      const current = await runScan(mode, false);
+      const record = current.skills.find((skill) => skill.id === id);
+      if (!record) throw new SkillNotFoundError(id);
+      // Only allow deleting a real skill.md file from the inventory — the path
+      // is the scanner's canonical path, so it cannot escape the scanned roots.
+      await removeFile(record.path);
+      // Drop the deleted record from the cached snapshot so the UI reflects it
+      // immediately without waiting for a rescan.
+      const remaining = current.skills.filter((skill) => skill.id !== id);
+      snapshots.set(mode, { ...current, skills: remaining });
+      return { id: record.id, name: record.name, path: record.path };
     },
   };
 }
