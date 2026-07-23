@@ -127,11 +127,20 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
 
 /* AG Grid (SkillTable) */
 .skill-grid { width: 100%; }
-.skill-grid.ag-theme-quartz { --ag-background-color: transparent; --ag-border-color: var(--line); --ag-header-background-color: var(--paper); --ag-row-hover-color: rgba(10, 132, 255, 0.05); }
+.skill-grid.ag-theme-quartz { --ag-background-color: transparent; --ag-border-color: var(--line); --ag-header-background-color: var(--paper); --ag-row-hover-color: rgba(10, 132, 255, 0.05); --ag-row-height: 44px; --ag-cell-horizontal-padding: 0.6rem; }
 .skill-grid .ag-header-cell-text { color: var(--muted); }
 .skill-grid .ag-row.is-selected { background: rgba(10, 132, 255, 0.09); }
 .skill-grid .ag-row.is-selected .skill-name { color: var(--accent); }
-.skill-grid .ag-cell { line-height: 1.35; }
+.skill-grid .ag-cell { line-height: 1.35; display: flex; align-items: center; }
+.skill-grid .ag-cell .skill-identity { min-width: 0; width: 100%; }
+.skill-grid .ag-cell .skill-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.skill-grid .ag-cell .skill-description { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
+.skill-grid .ag-cell .skill-source { display: flex; align-items: center; gap: 0.5rem; flex-wrap: nowrap; overflow: hidden; }
+.skill-grid .ag-cell .skill-source strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto; }
+.skill-grid .ag-cell .skill-source span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto; }
+.skill-grid .ag-cell .skill-source .skill-config-root { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; }
+.skill-grid .ag-cell .group-label { font-weight: 700; font-size: 0.82rem; }
+.skill-grid .ag-cell .token-count { font: 0.72rem/1 var(--mono); color: var(--muted); }
 .empty-state { min-height: 28rem; display: grid; place-content: center; justify-items: center; gap: 0.5rem; text-align: center; }
 .empty-state.overlay { position: absolute; inset: 0; background: var(--paper); }
 .empty-state > span { color: var(--accent); font: 300 4rem/1 var(--display); }

@@ -43,17 +43,8 @@ export function renderSkillNameCell(
   button.className = "skill-name";
   button.setAttribute("aria-label", `${skill.name}${ariaSuffix} 상세 보기`);
   button.addEventListener("click", () => onSelect(skill, button));
-  const mark = document.createElement("span");
-  mark.className = "record-mark";
-  mark.dataset.document = String(skill.recordType === "document");
-  mark.textContent = skill.recordType === "skill" ? "S" : "D";
-  const name = document.createElement("span");
-  name.textContent = skill.name;
-  button.append(mark, name);
-  const path = document.createElement("code");
-  path.title = skill.path;
-  path.textContent = skill.path;
-  wrap.append(button, path);
+  button.textContent = skill.name;
+  wrap.append(button);
   return wrap;
 }
 
@@ -188,6 +179,7 @@ export function useSkillGrid(host: () => HTMLDivElement | undefined, options: Gr
       columnDefs: baseColumns,
       rowData: options.skills(),
       domLayout: "autoHeight",
+      rowHeight: 44,
       getRowId: (params) => `${params.data.group?.label ?? ""}\0${params.data.skill.id}`,
       defaultColDef: { resizable: true, sortable: true },
       suppressCellFocus: true,
