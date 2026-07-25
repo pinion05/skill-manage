@@ -57,7 +57,13 @@ describe("inferAgentLabel", () => {
     ["/Applications/Visual Studio Code.app", "VS Code"],
     ["/Users/me/dev/app/.claude", "Claude Code"],
     ["/opt/tools", "tools"],
-  ])("labels %s", (root, label) => {
+  ])(`labels %s`, (root, label) => {
     expect(inferAgentLabel(root, home)).toBe(label);
+  });
+
+  it("labels Windows backslash paths", () => {
+    expect(inferAgentLabel("C:\\Users\\me\\.codex", home)).toBe("OpenAI Codex");
+    expect(inferAgentLabel("C:\\Users\\me\\.hermes", home)).toBe("Hermes runtime");
+    expect(inferAgentLabel("C:\\Users\\me\\.claude", home)).toBe("Claude Code");
   });
 });

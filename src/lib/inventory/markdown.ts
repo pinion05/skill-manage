@@ -1,5 +1,6 @@
 import { constants } from "node:fs";
 import { open } from "node:fs/promises";
+import process from "node:process";
 import matter from "gray-matter";
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
@@ -35,10 +36,11 @@ export async function readSkillContent(record: SkillRecord): Promise<SkillConten
 
   let handle: Awaited<ReturnType<typeof open>>;
   try {
-    handle = await open(
-      record.path,
-      constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
-    );
+    // O_NOFOLLOW is not supported on Windows.
+    const openFlags = process.platform === "win32"
+      ? constants.O_RDONLY | constants.O_NONBLOCK
+      : constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK;
+    handle = await open(record.path, openFlags);
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code;
     if (code === "ELOOP" || code === "EMLINK") {
@@ -52,7 +54,13 @@ export async function readSkillContent(record: SkillRecord): Promise<SkillConten
     if (!fileStat.isFile()) {
       throw new InvalidSkillFileError("skill 경로가 일반 파일이 아닙니다.");
     }
-    if (fileStat.dev !== record.device || fileStat.ino !== record.inode) {
+    // Identity check: rely on dev/ino when meaningful. On Windows (ino === 0)
+    // the inode is non-discriminating, so additionally compare size to reduce
+    // the chance of accepting a replaced file at the same path.
+    const identityChanged = fileStat.dev !== record.device
+      || fileStat.ino !== record.inode
+      || (record.inode === 0 && fileStat.size !== record.size);
+    if (identityChanged) {
       throw new InvalidSkillFileError("재검색 후 파일 경로의 identity가 바뀌었습니다.");
     }
     if (fileStat.size > MAX_SKILL_FILE_BYTES) {

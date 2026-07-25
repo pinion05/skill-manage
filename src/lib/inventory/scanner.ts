@@ -3,6 +3,7 @@ import { constants } from "node:fs";
 import { access, lstat, open, opendir, readlink, realpath, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import process from "node:process";
 import matter from "gray-matter";
 import { encode } from "gpt-tokenizer";
 import { classifyPath, findSkillsRoot, inferAgentLabel, inferConfigRoot } from "./classify";
@@ -39,9 +40,20 @@ const MAX_FRONTMATTER_BYTES = 1024 * 1024;
 const MAX_LINK_TARGET_DIRECTORIES = 10_000;
 const MAX_SCAN_DIRECTORIES = 500_000;
 
+function platformScanRoots(home: string): string[] {
+  const platform = process.platform;
+  if (platform === "win32") {
+    return [home, path.join(home, "AppData"), path.join(home, "AppData", "Roaming"), path.join(home, "AppData", "Local")];
+  }
+  if (platform === "darwin") {
+    return [home, "/Applications", "/Library", "/usr/local", "/opt/homebrew"];
+  }
+  return [home, "/usr/local", "/opt"];
+}
+
 export function defaultScanOptions(home = os.homedir()): ScanOptions {
   return {
-    roots: [home, "/Applications", "/Library", "/usr/local", "/opt/homebrew"],
+    roots: platformScanRoots(home),
     home,
     concurrency: 12,
     maxErrorSamples: 100,
@@ -232,10 +244,11 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
 
   const inspectSkill = async (filePath: string, fileName: string): Promise<void> => {
     try {
-      const handle = await open(
-        filePath,
-        constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
-      );
+      // O_NOFOLLOW is not supported on Windows. Use plain O_RDONLY there.
+      const openFlags = process.platform === "win32"
+        ? constants.O_RDONLY | constants.O_NONBLOCK
+        : constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK;
+      const handle = await open(filePath, openFlags);
       try {
         const fileStat = await handle.stat();
         if (!fileStat.isFile()) {
@@ -372,7 +385,25 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
     try {
       const directoryStat = await stat(directoryPath);
       if (!directoryStat.isDirectory()) return;
-      const directoryIdentity = `${directoryStat.dev}:${directoryStat.ino}`;
+      // On Windows, stat.ino (inode number) is always 0. Fall back to the
+      // canonicalized path (with case normalized on Windows) so distinct
+      // directories reached via different symlink/junction paths still
+      // collapse to a single identity, preventing repeated traversal and
+      // early SCAN_LIMIT exhaustion.
+      let directoryIdentity: string;
+      if (directoryStat.ino !== 0) {
+        directoryIdentity = `${directoryStat.dev}:${directoryStat.ino}`;
+      } else {
+        try {
+          const resolved = await realpath(directoryPath);
+          directoryIdentity = process.platform === "win32" ? resolved.toLowerCase() : resolved;
+        } catch {
+          // realpath can throw on ELOOP or permission errors. Skip enqueueing
+          // this directory to avoid runaway scans on broken link cycles.
+          recordError(new Error(`directory identity unresolved: ${directoryPath}`), directoryPath);
+          return;
+        }
+      }
       if (visitedDirectories.has(directoryIdentity)) return;
       visitedDirectories.add(directoryIdentity);
 

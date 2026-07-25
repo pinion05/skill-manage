@@ -45,16 +45,13 @@ afterEach(async () => {
 });
 
 describe("defaultScanOptions", () => {
-  it("uses portable roots derived from the current home", () => {
+  it("uses platform-appropriate roots derived from the current home", () => {
     const options = defaultScanOptions("/Users/example");
-    expect(options.roots).toEqual([
-      "/Users/example",
-      "/Applications",
-      "/Library",
-      "/usr/local",
-      "/opt/homebrew",
-    ]);
     expect(options.home).toBe("/Users/example");
+    expect(options.roots[0]).toBe("/Users/example");
+    // Roots differ by platform — just verify they are absolute and non-empty.
+    expect(options.roots.length).toBeGreaterThanOrEqual(2);
+    expect(options.roots.every((root) => path.isAbsolute(root))).toBe(true);
   });
 });
 
