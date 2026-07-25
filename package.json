@@ -43,7 +43,6 @@
   "files": [
     "bin",
     "dist",
-    "scripts/fix-build-paths.mjs",
     "README.md",
     "LICENSE"
   ],

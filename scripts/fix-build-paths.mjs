@@ -25,8 +25,15 @@ const clientMatch = source.match(clientPattern);
 const serverMatch = source.match(serverPattern);
 
 if (!clientMatch || !serverMatch) {
-  console.error("[fix-build-paths] entry.mjs에서 빌드 경로를 찾지 못했습니다. 이미 패치되었을 수 있습니다.");
-  process.exit(0);
+  // 이미 패치된 경우 (idempotent) — 성공 종료
+  if (source.includes('new URL("../client/", import.meta.url)') &&
+      source.includes('new URL(".", import.meta.url)')) {
+    console.log("[fix-build-paths] 이미 패치된 상태입니다. 건너뜁니다.");
+    process.exit(0);
+  }
+  // ponytail: 패턴 미스매치는 빌드 산출물 손상 → 조용히 넘기면 Windows 크래시 재발
+  console.error("[fix-build-paths] entry.mjs에서 빌드 경로를 찾지 못했습니다. 빌드 산출물이 손상되었을 수 있습니다.");
+  process.exit(1);
 }
 
 const patched = source
