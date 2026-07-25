@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { lstat, opendir, realpath, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import process from "node:process";
 import {
   matchOfficialRoot,
   resolveOfficialRegistry,
@@ -120,15 +121,13 @@ function errorDetails(error: unknown, errorPath: string): ScanError {
 }
 
 function sessionAndCacheRoots(home: string, environment: Environment): string[] {
-  const claudeHome = path.resolve(environment.CLAUDE_CONFIG_DIR || path.join(home, ".claude"));
-  const codexHome = path.resolve(environment.CODEX_HOME || path.join(home, ".codex"));
-  const hermesHome = path.resolve(environment.HERMES_HOME || path.join(home, ".hermes"));
-  const piHome = path.resolve(environment.PI_CODING_AGENT_DIR || path.join(home, ".pi", "agent"));
-  return [
-    path.join(claudeHome, "projects"),
-    path.join(codexHome, "sessions"),
-    path.join(hermesHome, "sessions"),
-    path.join(piHome, "sessions"),
+  const isWindows = process.platform === "win32";
+  const isMacos = process.platform === "darwin";
+  const roots: string[] = [
+    path.join(environment.CLAUDE_CONFIG_DIR || path.join(home, ".claude"), "projects"),
+    path.join(environment.CODEX_HOME || path.join(home, ".codex"), "sessions"),
+    path.join(environment.HERMES_HOME || path.join(home, ".hermes"), "sessions"),
+    path.join(environment.PI_CODING_AGENT_DIR || path.join(home, ".pi", "agent"), "sessions"),
     path.join(home, ".qwen", "tmp"),
     path.join(home, ".local", "share", "opencode"),
     path.join(home, ".codex", ".tmp"),
@@ -137,11 +136,23 @@ function sessionAndCacheRoots(home: string, environment: Environment): string[] 
     path.join(home, ".zcode", "cli", "plugins", "cache"),
     path.join(home, ".zcode", "cli", "plugins", "marketplaces"),
     path.join(home, ".vscode", "extensions"),
-    path.join(home, "Library", "Application Support"),
-    path.join(home, "Library", "Caches"),
     path.join(home, ".npm", "_cacache"),
     path.join(home, ".bun", "install", "cache"),
-  ].map((rootPath) => path.resolve(rootPath));
+  ];
+  if (isMacos) {
+    roots.push(
+      path.join(home, "Library", "Application Support"),
+      path.join(home, "Library", "Caches"),
+    );
+  }
+  if (isWindows) {
+    roots.push(
+      path.join(home, "AppData", "Local"),
+      path.join(home, "AppData", "Roaming"),
+      path.join(home, "AppData", "Local", "npm-cache"),
+    );
+  }
+  return roots.map((rootPath) => path.resolve(rootPath));
 }
 
 function shouldPrune(
@@ -417,7 +428,11 @@ async function dedupeOfficialSkills(
   for (const record of records) {
     const aliases = await fileAliasPaths(record, links);
     const sightings = dedupeSightings(aliases.flatMap((aliasPath) => rootSightingsForPath(aliasPath, roots)));
-    const identity = `${record.device}:${record.inode}`;
+    // On Windows, stat.ino is always 0. Fall back to the file path so each
+    // distinct file is treated as a unique record.
+    const identity = record.inode !== 0
+      ? `${record.device}:${record.inode}`
+      : record.path;
     const existing = deduped.get(identity);
     if (existing) {
       existing.sourceSightings = dedupeSightings([...existing.sourceSightings, ...sightings]);

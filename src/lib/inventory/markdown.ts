@@ -1,5 +1,6 @@
 import { constants } from "node:fs";
 import { open } from "node:fs/promises";
+import process from "node:process";
 import matter from "gray-matter";
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
@@ -35,10 +36,11 @@ export async function readSkillContent(record: SkillRecord): Promise<SkillConten
 
   let handle: Awaited<ReturnType<typeof open>>;
   try {
-    handle = await open(
-      record.path,
-      constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
-    );
+    // O_NOFOLLOW is not supported on Windows.
+    const openFlags = process.platform === "win32"
+      ? constants.O_RDONLY | constants.O_NONBLOCK
+      : constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK;
+    handle = await open(record.path, openFlags);
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code;
     if (code === "ELOOP" || code === "EMLINK") {

@@ -153,19 +153,19 @@ export function inferConfigRoot(filePath: string, home: string): string {
 }
 
 const LABELS: Array<[RegExp, string]> = [
-  [/\/\.codex(?:\/|$)/, "OpenAI Codex"],
-  [/\/\.claude(?:\/|$)/, "Claude Code"],
-  [/\/\.pi(?:\/|$)/, "Pi"],
-  [/\/\.hermes(?:\/|$)/, "Hermes Agent"],
-  [/\/\.config\/opencode(?:\/|$)|\/\.opencode(?:\/|$)/, "OpenCode"],
-  [/\/\.qwen(?:\/|$)/, "Qwen Code"],
-  [/\/\.gemini(?:\/|$)/, "Gemini"],
-  [/\/\.zcode(?:\/|$)/, "ZCode"],
-  [/\/\.gjc(?:\/|$)/, "Gajae Code"],
-  [/\/\.code(?:\/|$)/, "Just Every Code"],
-  [/\/\.browseros(?:\/|$)/, "BrowserOS"],
-  [/\/\.openclaw-autoclaw(?:\/|$)/, "OpenClaw / AutoClaw"],
-  [/\/\.agents(?:\/|$)/, "Shared agent skills"],
+  [/[\\/]\.codex(?:[\\/]|$)/, "OpenAI Codex"],
+  [/[\\/]\.claude(?:[\\/]|$)/, "Claude Code"],
+  [/[\\/]\.pi(?:[\\/]|$)/, "Pi"],
+  [/[\\/]\.hermes(?:[\\/]|$)/, "Hermes runtime"],
+  [/[\\/]\.config[\\/]opencode(?:[\\/]|$)|[\\/]\.opencode(?:[\\/]|$)/, "OpenCode"],
+  [/[\\/]\.qwen(?:[\\/]|$)/, "Qwen Code"],
+  [/[\\/]\.gemini(?:[\\/]|$)/, "Gemini"],
+  [/[\\/]\.zcode(?:[\\/]|$)/, "ZCode"],
+  [/[\\/]\.gjc(?:[\\/]|$)/, "Gajae Code"],
+  [/[\\/]\.code(?:[\\/]|$)/, "Just Every Code"],
+  [/[\\/]\.browseros(?:[\\/]|$)/, "BrowserOS"],
+  [/[\\/]\.openclaw-autoclaw(?:[\\/]|$)/, "OpenClaw / AutoClaw"],
+  [/[\\/]\.agents(?:[\\/]|$)/, "Shared agent skills"],
 ];
 
 export function inferAgentLabel(configRoot: string, home: string): string {
