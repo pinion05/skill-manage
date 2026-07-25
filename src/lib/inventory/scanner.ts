@@ -386,12 +386,24 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
       const directoryStat = await stat(directoryPath);
       if (!directoryStat.isDirectory()) return;
       // On Windows, stat.ino (inode number) is always 0. Fall back to the
-      // canonicalized path so distinct directories are never treated as the
-      // same cycle and silently skipped.
-      const directoryIdentity =
-        directoryStat.ino !== 0
-          ? `${directoryStat.dev}:${directoryStat.ino}`
-          : directoryPath;
+      // canonicalized path (with case normalized on Windows) so distinct
+      // directories reached via different symlink/junction paths still
+      // collapse to a single identity, preventing repeated traversal and
+      // early SCAN_LIMIT exhaustion.
+      let directoryIdentity: string;
+      if (directoryStat.ino !== 0) {
+        directoryIdentity = `${directoryStat.dev}:${directoryStat.ino}`;
+      } else {
+        try {
+          const resolved = await realpath(directoryPath);
+          directoryIdentity = process.platform === "win32" ? resolved.toLowerCase() : resolved;
+        } catch {
+          // realpath can throw on ELOOP or permission errors. Skip enqueueing
+          // this directory to avoid runaway scans on broken link cycles.
+          recordError(new Error(`directory identity unresolved: ${directoryPath}`), directoryPath);
+          return;
+        }
+      }
       if (visitedDirectories.has(directoryIdentity)) return;
       visitedDirectories.add(directoryIdentity);
 

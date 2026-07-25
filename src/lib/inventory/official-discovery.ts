@@ -353,10 +353,14 @@ function rootSightingsForPath(
   return sightings;
 }
 
-async function fileAliasPaths(record: SkillRecord, links: SkillLink[]): Promise<string[]> {
+async function fileAliasPaths(
+  record: SkillRecord,
+  links: SkillLink[],
+): Promise<{ aliases: string[]; physicalPath: string | null }> {
   const aliases = [record.path];
+  let physicalPath: string | null = null;
   try {
-    const physicalPath = await realpath(record.path);
+    physicalPath = await realpath(record.path);
     for (const link of links) {
       if (link.status !== "healthy" || !isWithin(link.target, physicalPath)) continue;
       aliases.push(path.join(link.path, path.relative(link.target, physicalPath)));
@@ -364,7 +368,7 @@ async function fileAliasPaths(record: SkillRecord, links: SkillLink[]): Promise<
   } catch {
     // The opened-handle identity remains authoritative; alias metadata may race away.
   }
-  return unique(aliases);
+  return { aliases: unique(aliases), physicalPath };
 }
 
 function createRootSummary(skills: SkillRecord[], links: SkillLink[]): InventoryRoot[] {
@@ -426,13 +430,14 @@ async function dedupeOfficialSkills(
 ): Promise<SkillRecord[]> {
   const deduped = new Map<string, SkillRecord>();
   for (const record of records) {
-    const aliases = await fileAliasPaths(record, links);
+    const { aliases, physicalPath } = await fileAliasPaths(record, links);
     const sightings = dedupeSightings(aliases.flatMap((aliasPath) => rootSightingsForPath(aliasPath, roots)));
-    // On Windows, stat.ino is always 0. Fall back to the file path so each
-    // distinct file is treated as a unique record.
+    // On Windows, stat.ino is always 0. Fall back to the canonical physical
+    // path (from realpath) so the same file reached via different link paths
+    // still merges; on failure, fall back to record.path.
     const identity = record.inode !== 0
       ? `${record.device}:${record.inode}`
-      : record.path;
+      : physicalPath ?? record.path;
     const existing = deduped.get(identity);
     if (existing) {
       existing.sourceSightings = dedupeSightings([...existing.sourceSightings, ...sightings]);
