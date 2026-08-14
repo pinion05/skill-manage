@@ -103,11 +103,13 @@ export function inferProjectDirectory(
 ): string | undefined {
   for (const candidate of [skillsRoot, configRoot]) {
     if (!candidate || !isAbsolutePathLike(candidate)) continue;
+    // Join with "/" so returned directories stay platform-independent
+    // (the dashboard treats them as opaque keys, not filesystem paths).
     const parts = candidate.replace(/[\\/]+$/, "").split(/[\\/]+/);
     const markerIndex = parts.findLastIndex((part) => PROJECT_MARKERS.has(part));
-    if (markerIndex > 1) return parts.slice(0, markerIndex).join(path.sep) || path.sep;
+    if (markerIndex > 1) return parts.slice(0, markerIndex).join("/");
     if (parts.at(-1)?.toLowerCase() === "skills" && parts.length > 2) {
-      return parts.slice(0, -1).join(path.sep) || path.sep;
+      return parts.slice(0, -1).join("/");
     }
   }
 

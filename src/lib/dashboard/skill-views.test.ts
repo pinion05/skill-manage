@@ -160,12 +160,8 @@ describe("inferProjectDirectory", () => {
   });
 
   it("derives project directories from Windows absolute paths", () => {
-    expect(inferProjectDirectory("C:\\Users\\me\\dev\\app\\.agents\\skills")).toBe(
-      ["C:", "Users", "me", "dev", "app"].join(path.sep),
-    );
-    expect(inferProjectDirectory("C:\\Users\\me\\workspace\\skills")).toBe(
-      ["C:", "Users", "me", "workspace"].join(path.sep),
-    );
+    expect(inferProjectDirectory("C:\\Users\\me\\dev\\app\\.agents\\skills")).toBe("C:/Users/me/dev/app");
+    expect(inferProjectDirectory("C:\\Users\\me\\workspace\\skills")).toBe("C:/Users/me/workspace");
     // Drive-letter parents (C:) are bounded like the POSIX "/" root:
     // inferProjectDirectory("/custom/root", "/agent") is undefined too.
     expect(inferProjectDirectory("C:\\custom\\root", "C:\\agent")).toBeUndefined();

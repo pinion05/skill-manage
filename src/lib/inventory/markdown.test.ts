@@ -108,7 +108,8 @@ describe("readSkillContent", () => {
     await expect(readSkillContent(record)).rejects.toBeInstanceOf(InvalidSkillFileError);
   });
 
-  it("rejects a FIFO replacement without waiting for a writer", async () => {
+  // FIFOs are a POSIX concept; Windows has no mkfifo.
+  it.skipIf(process.platform === "win32")("rejects a FIFO replacement without waiting for a writer", async () => {
     const record = await fixtureRecord("# Original\n");
     await rm(record.path);
     await execFileAsync("/usr/bin/mkfifo", [record.path]);

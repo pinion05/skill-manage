@@ -1,3 +1,4 @@
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   classifyPath,
@@ -7,6 +8,11 @@ import {
 } from "./classify";
 
 const home = "/Users/me";
+
+// classify.ts runs path.normalize/resolve internally, which rewrites POSIX
+// literals into platform separators (e.g. "\Users\me\.codex" on Windows).
+// Expectations therefore mirror whatever the running platform produces —
+// except for Windows-drive-letter cases, which are platform-invariant.
 
 describe("classifyPath", () => {
   it.each([
@@ -25,16 +31,22 @@ describe("classifyPath", () => {
 
 describe("inferConfigRoot", () => {
   it.each([
-    ["/Users/me/.codex/skills/foo/SKILL.md", "/Users/me/.codex"],
-    ["/Users/me/.pi/agent/skills/foo/SKILL.md", "/Users/me/.pi/agent"],
-    ["/Users/me/.pi/caveman/skills/foo/SKILL.md", "/Users/me/.pi/caveman"],
-    ["/Users/me/.config/opencode/skills/foo/SKILL.md", "/Users/me/.config/opencode"],
-    ["/Users/me/.codeium/windsurf/skills/foo/SKILL.md", "/Users/me/.codeium/windsurf"],
-    ["/Applications/Codex.app/Contents/x/skills/foo/SKILL.md", "/Applications/Codex.app"],
-    ["/Users/me/dev/app/.claude/skills/foo/SKILL.md", "/Users/me/dev/app/.claude"],
-    ["/opt/tools/skills/foo/SKILL.md", "/opt/tools"],
-  ] as const)("infers root for %s", (path, root) => {
-    expect(inferConfigRoot(path, home)).toBe(root);
+    ["/Users/me/.codex/skills/foo/SKILL.md", ["Users", "me", ".codex"]],
+    ["/Users/me/.pi/agent/skills/foo/SKILL.md", ["Users", "me", ".pi", "agent"]],
+    ["/Users/me/.pi/caveman/skills/foo/SKILL.md", ["Users", "me", ".pi", "caveman"]],
+    ["/Users/me/.config/opencode/skills/foo/SKILL.md", ["Users", "me", ".config", "opencode"]],
+    ["/Users/me/.codeium/windsurf/skills/foo/SKILL.md", ["Users", "me", ".codeium", "windsurf"]],
+    ["/Users/me/dev/app/.claude/skills/foo/SKILL.md", ["Users", "me", "dev", "app", ".claude"]],
+  ] as const)("infers root for %s", (filePath, expectedParts) => {
+    expect(inferConfigRoot(filePath, home)).toBe(path.join(path.sep, ...expectedParts));
+  });
+
+  // macOS app-bundle and /opt inferences rely on POSIX-only marker branches.
+  it.skipIf(process.platform === "win32")("infers macOS/Linux roots", () => {
+    expect(inferConfigRoot("/Applications/Codex.app/Contents/x/skills/foo/SKILL.md", home)).toBe(
+      "/Applications/Codex.app",
+    );
+    expect(inferConfigRoot("/opt/tools/skills/foo/SKILL.md", home)).toBe("/opt/tools");
   });
 });
 

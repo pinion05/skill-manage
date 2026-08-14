@@ -1,9 +1,15 @@
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   matchOfficialRoot,
   resolveOfficialRegistry,
   type ResolvedOfficialRegistry,
 } from "./official-sources";
+
+// official-sources.ts resolves every root through path.resolve, which rewrites
+// POSIX literals into platform separators on Windows ("D:\Users\me\...").
+// p() mirrors that so expectations hold on every platform.
+const p = (value: string) => path.resolve(value);
 
 function agent(registry: ResolvedOfficialRegistry, id: string) {
   const source = registry.agents.find((candidate) => candidate.id === id);
@@ -24,27 +30,27 @@ describe("resolveOfficialRegistry", () => {
     });
 
     expect(agent(registry, "claude-code").globalPaths).toEqual([
-      "/Users/me/.claude/skills",
-      "/tmp/claude-home/skills",
+      p("/Users/me/.claude/skills"),
+      p("/tmp/claude-home/skills"),
     ]);
     expect(agent(registry, "codex").globalPaths).toEqual([
-      "/tmp/codex-home/skills",
-      "/etc/codex/skills",
-      "/Users/me/.codex/skills",
+      p("/tmp/codex-home/skills"),
+      p("/etc/codex/skills"),
+      p("/Users/me/.codex/skills"),
     ]);
     expect(agent(registry, "hermes").globalPaths).toEqual(
-      expect.arrayContaining(["/tmp/hermes-home/skills", "~/.hermes/profiles/*/skills"]),
+      expect.arrayContaining([p("/tmp/hermes-home/skills"), "~/.hermes/profiles/*/skills"]),
     );
-    expect(agent(registry, "pi").globalPaths).toEqual(["/tmp/pi-home/skills"]);
-    expect(agent(registry, "kimi").globalPaths).toEqual(["/tmp/kimi-home/skills"]);
+    expect(agent(registry, "pi").globalPaths).toEqual([p("/tmp/pi-home/skills")]);
+    expect(agent(registry, "kimi").globalPaths).toEqual([p("/tmp/kimi-home/skills")]);
     expect(agent(registry, "crush").globalPaths).toEqual(
-      expect.arrayContaining(["/tmp/crush-skills", "/tmp/xdg/crush/skills"]),
+      expect.arrayContaining([p("/tmp/crush-skills"), p("/tmp/xdg/crush/skills")]),
     );
     expect(registry.shared.globalPaths).toEqual(
       expect.arrayContaining([
-        "/Users/me/.agents/skills",
-        "/tmp/xdg/agents/skills",
-        "/Users/me/.config/agent/skills",
+        p("/Users/me/.agents/skills"),
+        p("/tmp/xdg/agents/skills"),
+        p("/Users/me/.config/agent/skills"),
       ]),
     );
   });
@@ -95,30 +101,30 @@ describe("resolveOfficialRegistry", () => {
         "synthetic",
       ]),
     );
-    expect(agent(registry, "cursor").globalPaths).toEqual(["/Users/me/.cursor/skills"]);
+    expect(agent(registry, "cursor").globalPaths).toEqual([p("/Users/me/.cursor/skills")]);
     expect(agent(registry, "cursor").projectPaths).toEqual(["**/.cursor/skills"]);
     expect(agent(registry, "codex").projectPaths).toEqual(["**/.codex/skills"]);
     expect(agent(registry, "opencode").globalPaths).toEqual([
-      "/Users/me/.config/opencode/skills",
-      "/Users/me/.opencode/skills",
+      p("/Users/me/.config/opencode/skills"),
+      p("/Users/me/.opencode/skills"),
     ]);
     expect(agent(registry, "opencode").projectPaths).toEqual(["**/.opencode/skills"]);
     expect(agent(registry, "github-copilot-cli").globalPaths).toEqual([
-      "/Users/me/.copilot/skills",
-      "/Users/me/.github/skills",
+      p("/Users/me/.copilot/skills"),
+      p("/Users/me/.github/skills"),
     ]);
     expect(agent(registry, "github-copilot-cli").projectPaths).toEqual([
       "**/.github/skills",
       "**/.copilot/skills",
     ]);
-    expect(agent(registry, "qwen").globalPaths).toEqual(["/Users/me/.qwen/skills"]);
+    expect(agent(registry, "qwen").globalPaths).toEqual([p("/Users/me/.qwen/skills")]);
     expect(agent(registry, "zcode").projectPaths).toEqual([]);
   });
 
   it("keeps scan consumers internally while assigning one canonical owner", () => {
     const registry = resolveOfficialRegistry("/Users/me", {});
     const sharedGlobal = registry.globalRoots.find(
-      ({ path: rootPath }) => rootPath === "/Users/me/.agents/skills",
+      ({ path: rootPath }) => rootPath === p("/Users/me/.agents/skills"),
     );
 
     expect(sharedGlobal?.agents).toEqual(
