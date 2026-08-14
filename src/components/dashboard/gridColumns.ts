@@ -1,6 +1,6 @@
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-quartz.css";
-import { createGrid, type GridApi, type ICellRendererParams } from "ag-grid-community";
+import { createGrid, type GridApi, type ICellRendererParams, type RowClickedEvent } from "ag-grid-community";
 import { createEffect, onCleanup, onMount } from "solid-js";
 import type { SkillRecord } from "../../lib/inventory/types";
 import { kindLabel } from "./FilterBar";
@@ -183,6 +183,12 @@ export function useSkillGrid(host: () => HTMLDivElement | undefined, options: Gr
       defaultColDef: { resizable: true, sortable: true },
       suppressCellFocus: true,
       suppressScrollOnNewData: true,
+      onRowClicked: (params: RowClickedEvent) => {
+        const data = params.data;
+        if (!data) return;
+        const trigger = (params.event as MouseEvent)?.target as HTMLElement;
+        options.onSelect(data.skill, trigger ?? (params.event as MouseEvent)?.currentTarget as HTMLElement);
+      },
     });
   });
 
