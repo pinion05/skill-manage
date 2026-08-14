@@ -189,8 +189,29 @@ export function SkillDashboard() {
       <Show when={progress()} keyed>
         {(p) => (
           <Show when={refreshing() || snapshot.loading}>
-            <div class="scan-progress-bar" aria-hidden="true">
-              <span class="scan-progress-label">📁 {p.visitedDirs.toLocaleString("ko-KR")} 디렉터리 · 📄 {p.skillsFound.toLocaleString("ko-KR")} skill · ⏱ {p.elapsedMs.toLocaleString("ko-KR")}ms</span>
+            <div class="scan-progress-overlay" role="status" aria-live="polite">
+              <div class="scan-progress-content">
+                <span class="scan-progress-kicker">SCANNING</span>
+                <div class="scan-progress-grid">
+                  <div class="scan-progress-cell">
+                    <strong>{p.visitedDirs.toLocaleString("ko-KR")}</strong>
+                    <span>디렉터리</span>
+                  </div>
+                  <div class="scan-progress-cell">
+                    <strong>{p.skillsFound.toLocaleString("ko-KR")}</strong>
+                    <span>SKILL 파일</span>
+                  </div>
+                  <div class="scan-progress-cell">
+                    <strong>{p.linksFound.toLocaleString("ko-KR")}</strong>
+                    <span>링크</span>
+                  </div>
+                  <div class="scan-progress-cell">
+                    <strong>{p.elapsedMs.toLocaleString("ko-KR")}ms</strong>
+                    <span>경과</span>
+                  </div>
+                </div>
+                <span class="scan-progress-bar-line" aria-hidden="true"><i /></span>
+              </div>
             </div>
           </Show>
         )}

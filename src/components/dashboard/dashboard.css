@@ -19,8 +19,15 @@
 .scan-rail i { display: block; width: 45%; height: 100%; background: var(--accent); opacity: 0; }
 .scan-rail.active i { opacity: 1; animation: scan-pass 0.9s ease-in-out infinite; }
 
-.scan-progress-bar { position: fixed; inset: 3px 0 auto; z-index: 60; height: 1.8rem; display: flex; align-items: center; justify-content: center; background: var(--ink); pointer-events: none; }
-.scan-progress-label { color: var(--accent); font: 700 0.66rem/1 var(--mono); letter-spacing: 0.05em; }
+.scan-progress-overlay { position: fixed; inset: 0; z-index: 65; display: flex; align-items: center; justify-content: center; background: rgb(15 23 36 / 0.82); backdrop-filter: blur(4px); }
+.scan-progress-content { display: grid; justify-items: center; gap: 1.5rem; padding: 2.5rem 3rem; }
+.scan-progress-kicker { color: var(--accent); font: 700 0.72rem/1 var(--mono); letter-spacing: 0.2em; }
+.scan-progress-grid { display: flex; gap: 2.5rem; }
+.scan-progress-cell { display: grid; justify-items: center; gap: 0.4rem; }
+.scan-progress-cell strong { font: 680 clamp(2rem, 4vw, 3.2rem)/1 var(--display); letter-spacing: -0.03em; color: white; }
+.scan-progress-cell span { color: var(--muted); font: 700 0.62rem/1 var(--mono); letter-spacing: 0.1em; }
+.scan-progress-bar-line { width: min(30rem, 70vw); height: 3px; overflow: hidden; background: var(--line-strong); }
+.scan-progress-bar-line i { display: block; width: 45%; height: 100%; background: var(--accent); animation: scan-pass 0.9s ease-in-out infinite; }
 
 .progress-stats { width: min(44rem, 90vw); display: flex; flex-wrap: wrap; gap: 0.35rem 1.2rem; margin-top: 0.5rem; }
 .progress-stats span { color: var(--muted); font: 0.66rem/1.3 var(--mono); }
@@ -364,6 +371,8 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
 
 @media (max-width: 760px) {
   .app-shell { padding: 0 0.9rem; }
+  .scan-progress-grid { gap: 1.2rem; }
+  .scan-progress-cell strong { font-size: clamp(1.4rem, 8vw, 2rem); }
   .app-header { min-height: 12rem; align-items: stretch; flex-direction: column; justify-content: flex-end; gap: 1.5rem; }
   .brand-block h1 { font-size: clamp(3.8rem, 20vw, 6rem); }
   .scan-control { min-width: 0; display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; }
@@ -427,7 +436,7 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scan-rail.active i, .loading-rule::after, .loading-rule-progress::after, .loading-stats i { animation: none; }
+  .scan-rail.active i, .loading-rule::after, .loading-rule-progress::after, .loading-stats i, .scan-progress-bar-line i { animation: none; }
   td, .detail-panel { animation: none; }
   .scan-control > button, .scan-mode-control button, .view-tabs button::after { transition: none; }
 }
