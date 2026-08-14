@@ -53,12 +53,14 @@ describe("inferConfigRoot", () => {
 describe("findSkillsRoot", () => {
   it("uses the nearest skills directory", () => {
     expect(findSkillsRoot("/repo/skills/outer/examples/skills/inner/SKILL.md")).toBe(
-      "/repo/skills/outer/examples/skills",
+      path.join(path.sep, "repo", "skills", "outer", "examples", "skills"),
     );
   });
 
   it("falls back to the skill parent directory", () => {
-    expect(findSkillsRoot("/repo/custom/foo/SKILL.md")).toBe("/repo/custom");
+    expect(findSkillsRoot("/repo/custom/foo/SKILL.md")).toBe(
+      path.join(path.sep, "repo", "custom"),
+    );
   });
 });
 
