@@ -134,3 +134,20 @@ export interface SkillContent {
   markdown: string;
   html: string;
 }
+
+export interface ScanProgress {
+  /** 디렉터리 발견 누적 (BFS enqueue 총합). */
+  discoveredDirs: number;
+  /** 디렉터리 방문 완료 누적. */
+  visitedDirs: number;
+  /** 발견한 skill 파일 누적. */
+  skillsFound: number;
+  /** 발견한 심볼릭 링크 누적. */
+  linksFound: number;
+  /** 현재 검색 루트 개수 (전체 중 검색 대상). */
+  searchRoots: number;
+  /** 경과 시간 (ms). */
+  elapsedMs: number;
+}
+
+export type ProgressCallback = (progress: ScanProgress) => void;

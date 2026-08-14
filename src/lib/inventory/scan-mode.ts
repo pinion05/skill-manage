@@ -1,6 +1,6 @@
 import { annotateFullInventory, scanOfficialInventory } from "./official-discovery";
 import { scanInventory } from "./scanner";
-import type { InventorySnapshot, ScanMode } from "./types";
+import type { InventorySnapshot, ProgressCallback, ScanMode } from "./types";
 
 export class InvalidScanModeError extends Error {
   constructor(value: string) {
@@ -16,18 +16,18 @@ export function parseScanMode(value: string | null): ScanMode {
 }
 
 export interface InventoryModeScannerDependencies {
-  scanOfficial?: () => Promise<InventorySnapshot>;
-  scanFull?: () => Promise<InventorySnapshot>;
+  scanOfficial?: (onProgress?: ProgressCallback) => Promise<InventorySnapshot>;
+  scanFull?: (onProgress?: ProgressCallback) => Promise<InventorySnapshot>;
 }
 
 export function createInventoryModeScanner(
   dependencies: InventoryModeScannerDependencies = {},
-): (mode: ScanMode) => Promise<InventorySnapshot> {
-  const scanOfficial = dependencies.scanOfficial ?? (() => scanOfficialInventory());
+): (mode: ScanMode, onProgress?: ProgressCallback) => Promise<InventorySnapshot> {
+  const scanOfficial = dependencies.scanOfficial ?? ((onProgress?: ProgressCallback) => scanOfficialInventory({ onProgress }));
   const scanFull =
-    dependencies.scanFull ?? (async () => annotateFullInventory(await scanInventory()));
+    dependencies.scanFull ?? (async (onProgress?: ProgressCallback) => annotateFullInventory(await scanInventory({ onProgress })));
 
-  return (mode) => (mode === "official" ? scanOfficial() : scanFull());
+  return (mode, onProgress) => (mode === "official" ? scanOfficial(onProgress) : scanFull(onProgress));
 }
 
 export const scanInventoryForMode = createInventoryModeScanner();

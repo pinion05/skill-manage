@@ -8,6 +8,7 @@ import {
 import type {
   InventorySnapshot,
   ScanMode,
+  ScanProgress,
   SkillKind,
   SkillRecord,
 } from "../../lib/inventory/types";
@@ -31,11 +32,48 @@ const INITIAL_QUERY: DashboardQuery = {
   direction: "asc",
 };
 
-async function requestInventory(url: string, init?: RequestInit): Promise<InventorySnapshot> {
-  const response = await fetch(url, init);
-  const body = await response.json();
-  if (!response.ok) throw new Error(body.error ?? "인벤토리를 불러오지 못했습니다.");
-  return body as InventorySnapshot;
+/**
+ * SSE 기반 스캔 — EventSource로 /api/inventory/scan에 연결.
+ * progress 이벤트 → onProgress 콜백, done 이벤트 → resolve, error → reject.
+ */
+function requestInventorySSE(
+  mode: ScanMode,
+  onProgress?: (p: ScanProgress) => void,
+): Promise<InventorySnapshot> {
+  return new Promise((resolve, reject) => {
+    const source = new EventSource(`/api/inventory/scan?mode=${mode}`);
+    source.addEventListener("progress", (e) => {
+      if (!onProgress) return;
+      try {
+        onProgress(JSON.parse(e.data));
+      } catch {
+        // ignore malformed payload
+      }
+    });
+    source.addEventListener("done", (e) => {
+      source.close();
+      try {
+        resolve(JSON.parse(e.data) as InventorySnapshot);
+      } catch {
+        reject(new Error("인벤토리 데이터를 파싱하지 못했습니다."));
+      }
+    });
+    source.addEventListener("error", (e) => {
+      source.close();
+      // SSE 'error' event는 우리가 보낸 에러가 아닐 수도 있다 (네트워크 끊김 등).
+      // done 이벤트가 이미 왔다면 resolve된 상태이므로 reject는 무시됨.
+      const data = (e as MessageEvent).data;
+      if (data) {
+        try {
+          reject(new Error((JSON.parse(data) as { error: string }).error));
+        } catch {
+          reject(new Error("스캔 중 오류가 발생했습니다."));
+        }
+      } else {
+        reject(new Error("스캔 연결이 끊어졌습니다."));
+      }
+    });
+  });
 }
 
 const timeFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -49,7 +87,7 @@ const timeFormatter = new Intl.DateTimeFormat("ko-KR", {
 export function SkillDashboard() {
   const [scanMode, setScanMode] = createSignal<ScanMode>("official");
   const [snapshot, { mutate }] = createResource(scanMode, (mode) =>
-    requestInventory(`/api/inventory?mode=${mode}`),
+    requestInventorySSE(mode, (p) => setProgress(p)),
   );
   const [query, setQuery] = createSignal<DashboardQuery>(INITIAL_QUERY);
   const [view, setView] = createSignal<
@@ -59,6 +97,7 @@ export function SkillDashboard() {
   const [refreshing, setRefreshing] = createSignal(false);
   const [refreshStatus, setRefreshStatus] = createSignal("");
   const [actionError, setActionError] = createSignal("");
+  const [progress, setProgress] = createSignal<ScanProgress | undefined>();
   let detailTrigger: HTMLElement | undefined;
 
   const filteredSkills = createMemo(() => {
@@ -90,6 +129,7 @@ export function SkillDashboard() {
     detailTrigger = undefined;
     setQuery(INITIAL_QUERY);
     setActionError("");
+    setProgress();
     setRefreshStatus(
       nextMode === "official"
         ? "공식 디렉터리 인벤토리를 불러옵니다."
@@ -102,15 +142,15 @@ export function SkillDashboard() {
   const refresh = async () => {
     const currentMode = scanMode();
     setRefreshing(true);
+    setProgress();
     setRefreshStatus("파일시스템 재검색을 시작했습니다.");
     setActionError("");
     try {
-      const next = await requestInventory(`/api/inventory/refresh?mode=${currentMode}`, {
-        method: "POST",
-      });
+      const next = await requestInventorySSE(currentMode, (p) => setProgress(p));
       mutate(next);
       const currentSelection = selected();
       if (currentSelection) setSelected(next.skills.find((skill) => skill.id === currentSelection.id));
+      setProgress();
       setRefreshStatus("파일시스템 재검색이 완료되었습니다.");
     } catch (error) {
       setRefreshStatus("파일시스템 재검색에 실패했습니다.");
@@ -149,8 +189,7 @@ export function SkillDashboard() {
       <header class="app-header">
         <div class="brand-block">
           <span class="brand-index">LOCAL / 001</span>
-          <h1><span>SKILL</span><span>ATLAS</span></h1>
-          <p>코딩 에이전트의 skill 파일과 링크를 한곳에서 읽습니다.</p>
+          <h1>skill-manage</h1>
         </div>
 
         <div class="scan-control">
@@ -194,12 +233,25 @@ export function SkillDashboard() {
         when={snapshot()}
         fallback={
           <section class="initial-loading" aria-live="polite">
-            <span class="loading-rule" aria-hidden="true" />
-            <p>파일시스템을 읽는 중</p>
-            <small>SKILL.md와 심볼릭 링크를 조사합니다.</small>
-            <div class="loading-stats" aria-hidden="true">
-              <i /><i /><i /><i /><i /><i />
+            <div class="loading-grid" aria-hidden="true">
+              {Array.from({ length: 9 }, (_, i) => (
+                <span style={{ "--i": String(i) }} />
+              ))}
             </div>
+            <p>파일시스템을 읽는 중</p>
+            <Show
+              when={progress()}
+              fallback={<small>SKILL.md와 심볼릭 링크를 조사합니다.</small>}
+            >
+              {(p) => (
+                <div class="loading-grid-stats">
+                  <span>📁 {p().visitedDirs.toLocaleString("ko-KR")} 디렉터리</span>
+                  <span>📄 {p().skillsFound.toLocaleString("ko-KR")} skill</span>
+                  <span>🔗 {p().linksFound.toLocaleString("ko-KR")} 링크</span>
+                  <span>⏱ {p().elapsedMs.toLocaleString("ko-KR")}ms</span>
+                </div>
+              )}
+            </Show>
             <Show when={snapshot.error}><strong>{snapshot.error?.message}</strong></Show>
           </section>
         }
@@ -303,6 +355,7 @@ export function SkillDashboard() {
               <Match when={view() === "agents"}>
                 <AgentSkillsPanel
                   projection={agentSkills()}
+                  selectedId={selected()?.id}
                   onSelect={(skill, trigger) => {
                     detailTrigger = trigger;
                     setSelected(skill);
@@ -312,6 +365,7 @@ export function SkillDashboard() {
               <Match when={view() === "projects"}>
                 <ProjectSkillsPanel
                   projection={projectSkills()}
+                  selectedId={selected()?.id}
                   onSelect={(skill, trigger) => {
                     detailTrigger = trigger;
                     setSelected(skill);

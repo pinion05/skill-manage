@@ -242,14 +242,56 @@ function jsonResponse(body: unknown): Response {
   });
 }
 
+let esCallCount = 0;
+
+/** Set up a mock EventSource that resolves with the given snapshot data. */
+function setupInventorySource(
+  resolver: (url: string, callIndex: number) => InventorySnapshot,
+): void {
+  esCallCount = 0;
+  class MockEventSource {
+    private listeners: Record<string, Array<(e: MessageEvent) => void>> = {};
+    private closed = false;
+    readonly url: string;
+
+    constructor(url: string) {
+      this.url = url;
+      const idx = esCallCount++;
+      queueMicrotask(() => {
+        if (this.closed) return;
+        try {
+          const data = resolver(url, idx);
+          const event = new MessageEvent("done", { data: JSON.stringify(data) });
+          (this.listeners["done"] ?? []).forEach((fn) => fn(event));
+        } catch (err) {
+          const event = new MessageEvent("error", {
+            data: JSON.stringify({ error: err instanceof Error ? err.message : "mock error" }),
+          });
+          (this.listeners["error"] ?? []).forEach((fn) => fn(event));
+        }
+      });
+    }
+
+    addEventListener(type: string, fn: (e: MessageEvent) => void): void {
+      (this.listeners[type] ??= []).push(fn);
+    }
+
+    close(): void {
+      this.closed = true;
+    }
+  }
+  vi.stubGlobal("EventSource", MockEventSource);
+}
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  esCallCount = 0;
 });
 
 describe("SkillDashboard", () => {
   it("loads the inventory and filters the visible skill list", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(inventory())));
+    setupInventorySource(() => inventory());
     render(() => <SkillDashboard />);
 
     expect(screen.getByText("파일시스템을 읽는 중")).toBeInTheDocument();
@@ -272,16 +314,12 @@ describe("SkillDashboard", () => {
     const official = inventory("official-alpha");
     const full = inventory("full-alpha");
     full.scanMode = "full";
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) =>
-      jsonResponse(String(input).includes("mode=full") ? full : official),
+    setupInventorySource((url) =>
+      url.includes("mode=full") ? full : official,
     );
-    vi.stubGlobal("fetch", fetchMock);
     render(() => <SkillDashboard />);
 
     expect(await screen.findByRole("button", { name: /official-alpha 상세 보기/ })).toBeInTheDocument();
-    expect(fetchMock.mock.calls.some(([input]) => String(input) === "/api/inventory?mode=official")).toBe(
-      true,
-    );
     expect(screen.getByRole("button", { name: "공식 디렉터리" })).toHaveAttribute(
       "aria-pressed",
       "true",
@@ -290,9 +328,6 @@ describe("SkillDashboard", () => {
     fireEvent.click(screen.getByRole("button", { name: "전체 파일시스템" }));
 
     expect(await screen.findByRole("button", { name: /full-alpha 상세 보기/ })).toBeInTheDocument();
-    expect(fetchMock.mock.calls.some(([input]) => String(input) === "/api/inventory?mode=full")).toBe(
-      true,
-    );
     expect(screen.getByRole("button", { name: "전체 파일시스템" })).toHaveAttribute(
       "aria-pressed",
       "true",
@@ -303,9 +338,10 @@ describe("SkillDashboard", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) =>
       String(input).startsWith("/api/skills/content")
         ? jsonResponse({ id: "skill-alpha", path: "/tmp/SKILL.md", markdown: "# A", html: "<h1>A</h1>" })
-        : jsonResponse(sourcedInventory()),
+        : jsonResponse({ error: "should use SSE" }),
     );
     vi.stubGlobal("fetch", fetchMock);
+    setupInventorySource(() => sourcedInventory());
     render(() => <SkillDashboard />);
 
     fireEvent.click(await screen.findByRole("button", { name: "공식 소스 3" }));
@@ -339,34 +375,36 @@ describe("SkillDashboard", () => {
   });
 
   it("shows non-project Skills by agent and merges project aliases by directory", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (input: RequestInfo | URL) =>
-        String(input).startsWith("/api/skills/content")
-          ? jsonResponse({
-              id: "skill-project-only",
-              path: "/Users/me/dev/app/.claude/skills/project-only/SKILL.md",
-              markdown: "# Project only",
-              html: "<h1>Project only</h1>",
-            })
-          : jsonResponse(skillViewInventory()),
-      ),
-    );
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) =>
+      String(input).startsWith("/api/skills/content")
+        ? jsonResponse({
+            id: "skill-project-only",
+            path: "/Users/me/dev/app/.claude/skills/project-only/SKILL.md",
+            markdown: "# Project only",
+            html: "<h1>Project only</h1>",
+          })
+        : jsonResponse({ error: "should use SSE" }),
+    ));
+    setupInventorySource(() => skillViewInventory());
     render(() => <SkillDashboard />);
 
     expect(await screen.findByRole("button", { name: "에이전트 1" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "프로젝트 2" })).toBeInTheDocument();
 
-    // Agent tab: skills are rendered in a single AG Grid, grouped by agent label column.
+    // Agent tab: now shows agent cards. Click Claude Code card to see its skills.
     fireEvent.click(screen.getByRole("button", { name: "에이전트 1" }));
+    const claudeCard = await screen.findByRole("button", { name: /Claude Code/i });
+    fireEvent.click(claudeCard);
     const agentTrigger = await screen.findByRole("button", { name: /global-skill.*상세 보기/ });
     expect(agentTrigger).toBeInTheDocument();
     // Project-only and document-only records are excluded from the agent (non-project) view.
     expect(screen.queryByText("project-only")).not.toBeInTheDocument();
     expect(screen.queryByText("document-only")).not.toBeInTheDocument();
 
-    // Project tab: directory-grouped grid merges aliases by physical inode.
+    // Project tab: now shows project directory cards. Click the "app" card to see skills.
     fireEvent.click(screen.getByRole("button", { name: "프로젝트 2" }));
+    const appCard = await screen.findByRole("button", { name: /app\s+\d+\s+skill/i });
+    fireEvent.click(appCard);
     const projectTrigger = await screen.findByRole("button", { name: /project-only.*상세 보기/ });
     expect(projectTrigger).toBeInTheDocument();
     expect(screen.getByText("global-skill")).toBeInTheDocument();
@@ -394,7 +432,7 @@ describe("SkillDashboard", () => {
     manySkills.stats.uniqueNames = 61;
     manySkills.roots[0]!.skillCount = 61;
 
-    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(manySkills)));
+    setupInventorySource(() => manySkills);
     render(() => <SkillDashboard />);
 
     expect(await screen.findByRole("button", { name: "skill-00 상세 보기" })).toBeInTheDocument();
@@ -405,14 +443,12 @@ describe("SkillDashboard", () => {
   });
 
   it("shows duplicate installs by normalized name and opens their detail", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (input: RequestInfo | URL) =>
-        String(input).startsWith("/api/skills/content")
-          ? jsonResponse({ id: "skill-alpha", path: "/tmp/SKILL.md", markdown: "# A", html: "<h1>A</h1>" })
-          : jsonResponse(duplicateInventory()),
-      ),
-    );
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) =>
+      String(input).startsWith("/api/skills/content")
+        ? jsonResponse({ id: "skill-alpha", path: "/tmp/SKILL.md", markdown: "# A", html: "<h1>A</h1>" })
+        : jsonResponse({ error: "should use SSE" }),
+    ));
+    setupInventorySource(() => duplicateInventory());
     render(() => <SkillDashboard />);
 
     const tab = await screen.findByRole("button", { name: "중복 설치 1" });
@@ -433,7 +469,7 @@ describe("SkillDashboard", () => {
   });
 
   it("shows an empty state when no skill name is installed twice", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(inventory())));
+    setupInventorySource(() => inventory());
     render(() => <SkillDashboard />);
 
     fireEvent.click(await screen.findByRole("button", { name: "중복 설치 0" }));
@@ -441,20 +477,19 @@ describe("SkillDashboard", () => {
   });
 
   it("updates duplicate groups after a manual filesystem refresh", async () => {
-    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) =>
-      jsonResponse(init?.method === "POST" ? duplicateInventory() : inventory()),
+    setupInventorySource((_url, idx) =>
+      idx === 0 ? inventory() : duplicateInventory(),
     );
-    vi.stubGlobal("fetch", fetchMock);
     render(() => <SkillDashboard />);
 
     expect(await screen.findByRole("button", { name: "중복 설치 0" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "파일시스템 재검색" }));
     expect(await screen.findByRole("button", { name: "중복 설치 1" })).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith("/api/inventory/refresh?mode=official", { method: "POST" });
+    // SSE-based refresh: duplicate count updated from 0 to 1
   });
 
   it("shows scan-error samples and link aggregates by configuration root", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(inventory())));
+    setupInventorySource(() => inventory());
     render(() => <SkillDashboard />);
 
     await screen.findByRole("button", { name: /alpha 상세 보기/ });
@@ -466,14 +501,12 @@ describe("SkillDashboard", () => {
   });
 
   it("moves focus into the detail and restores it after Escape", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (input: RequestInfo | URL) =>
-        String(input).startsWith("/api/skills/content")
-          ? jsonResponse({ id: "skill-alpha", path: "/tmp/SKILL.md", markdown: "# A", html: "<h1>A</h1>" })
-          : jsonResponse(inventory()),
-      ),
-    );
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) =>
+      String(input).startsWith("/api/skills/content")
+        ? jsonResponse({ id: "skill-alpha", path: "/tmp/SKILL.md", markdown: "# A", html: "<h1>A</h1>" })
+        : jsonResponse({ error: "should use SSE" }),
+    ));
+    setupInventorySource(() => inventory());
     render(() => <SkillDashboard />);
 
     const trigger = await screen.findByRole("button", { name: /alpha 상세 보기/ });
@@ -491,7 +524,7 @@ describe("SkillDashboard", () => {
   });
 
   it("refreshes and opens sanitized skill detail content", async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.startsWith("/api/skills/content")) {
         return jsonResponse({
@@ -501,10 +534,12 @@ describe("SkillDashboard", () => {
           html: "<h1>Alpha content</h1>",
         });
       }
-      if (init?.method === "POST") return jsonResponse(inventory("alpha-refreshed"));
-      return jsonResponse(inventory());
+      return jsonResponse({ error: "should use SSE" });
     });
     vi.stubGlobal("fetch", fetchMock);
+    setupInventorySource((_url, idx) =>
+      idx === 0 ? inventory() : inventory("alpha-refreshed"),
+    );
     render(() => <SkillDashboard />);
 
     fireEvent.click(await screen.findByRole("button", { name: /alpha 상세 보기/ }));
@@ -514,7 +549,7 @@ describe("SkillDashboard", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /alpha-refreshed 상세 보기/ })).toBeInTheDocument();
     });
-    expect(fetchMock).toHaveBeenCalledWith("/api/inventory/refresh?mode=official", { method: "POST" });
+    // SSE-based refresh verified via UI state change above
     expect(screen.getByText("파일시스템 재검색이 완료되었습니다.")).toHaveAttribute(
       "aria-live",
       "polite",

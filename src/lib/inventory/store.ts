@@ -1,7 +1,7 @@
 import { unlink } from "node:fs/promises";
 import { readSkillContent } from "./markdown";
 import { scanInventoryForMode } from "./scan-mode";
-import type { InventorySnapshot, ScanMode, SkillContent, SkillRecord } from "./types";
+import type { InventorySnapshot, ProgressCallback, ScanMode, SkillContent, SkillRecord } from "./types";
 
 export class SkillNotFoundError extends Error {
   constructor(id: string) {
@@ -23,8 +23,8 @@ export interface DeletedSkill {
 }
 
 export interface InventoryStore {
-  getInventory: (mode?: ScanMode) => Promise<InventorySnapshot>;
-  refreshInventory: (mode?: ScanMode) => Promise<InventorySnapshot>;
+  getInventory: (mode?: ScanMode, onProgress?: ProgressCallback) => Promise<InventorySnapshot>;
+  refreshInventory: (mode?: ScanMode, onProgress?: ProgressCallback) => Promise<InventorySnapshot>;
   getSkillContent: (id: string, mode?: ScanMode) => Promise<SkillContent>;
   deleteSkill: (id: string, mode?: ScanMode) => Promise<DeletedSkill>;
 }
@@ -38,13 +38,13 @@ export function createInventoryStore(
   const snapshots = new Map<ScanMode, InventorySnapshot>();
   const inFlight = new Map<ScanMode, Promise<InventorySnapshot>>();
 
-  const runScan = (mode: ScanMode, force: boolean): Promise<InventorySnapshot> => {
+  const runScan = (mode: ScanMode, force: boolean, onProgress?: ProgressCallback): Promise<InventorySnapshot> => {
     const pending = inFlight.get(mode);
     if (pending) return pending;
     const cached = snapshots.get(mode);
     if (!force && cached) return Promise.resolve(cached);
 
-    const request = scan(mode)
+    const request = scan(mode, onProgress)
       .then((nextSnapshot) => {
         snapshots.set(mode, nextSnapshot);
         return nextSnapshot;
@@ -57,8 +57,8 @@ export function createInventoryStore(
   };
 
   return {
-    getInventory: (mode = "official") => runScan(mode, false),
-    refreshInventory: (mode = "official") => runScan(mode, true),
+    getInventory: (mode = "official", onProgress) => runScan(mode, false, onProgress),
+    refreshInventory: (mode = "official", onProgress) => runScan(mode, true, onProgress),
     getSkillContent: async (id: string, mode = "official") => {
       const current = await runScan(mode, false);
       const record = current.skills.find((skill) => skill.id === id);

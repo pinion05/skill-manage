@@ -15,6 +15,7 @@ import type {
   InventorySnapshot,
   InventoryStats,
   OfficialSourceRoot,
+  ProgressCallback,
   ScanError,
   SkillLink,
   SkillRecord,
@@ -35,6 +36,7 @@ export interface OfficialScanOptions extends Omit<OfficialDiscoveryOptions, "max
   discoveryMaxDirectories?: number;
   maxScanDirectories?: number;
   maxLinkTargetDirectories?: number;
+  onProgress?: ProgressCallback;
 }
 
 export interface OfficialRootDiscovery {
@@ -487,6 +489,7 @@ export async function scanOfficialInventory(
     maxLinkTargetDirectories: options.maxLinkTargetDirectories ?? 10_000,
     maxDirectories: options.maxScanDirectories ?? 100_000,
     followDirectoryLinks: true,
+    onProgress: options.onProgress,
   });
   const skills = await dedupeOfficialSkills(base.skills, base.links, discovery.roots);
   setOfficialRootCounts(discovery.roots, skills);
