@@ -186,36 +186,6 @@ export function SkillDashboard() {
     <main class="app-shell">
       <p class="sr-only" aria-live="polite" aria-atomic="true">{refreshStatus()}</p>
       <div class="scan-rail" classList={{ active: refreshing() || snapshot.loading }} aria-hidden="true"><i /></div>
-      <Show when={progress()} keyed>
-        {(p) => (
-          <Show when={refreshing() || snapshot.loading}>
-            <div class="scan-progress-overlay" role="status" aria-live="polite">
-              <div class="scan-progress-content">
-                <span class="scan-progress-kicker">SCANNING</span>
-                <div class="scan-progress-grid">
-                  <div class="scan-progress-cell">
-                    <strong>{p.visitedDirs.toLocaleString("ko-KR")}</strong>
-                    <span>디렉터리</span>
-                  </div>
-                  <div class="scan-progress-cell">
-                    <strong>{p.skillsFound.toLocaleString("ko-KR")}</strong>
-                    <span>SKILL 파일</span>
-                  </div>
-                  <div class="scan-progress-cell">
-                    <strong>{p.linksFound.toLocaleString("ko-KR")}</strong>
-                    <span>링크</span>
-                  </div>
-                  <div class="scan-progress-cell">
-                    <strong>{p.elapsedMs.toLocaleString("ko-KR")}ms</strong>
-                    <span>경과</span>
-                  </div>
-                </div>
-                <span class="scan-progress-bar-line" aria-hidden="true"><i /></span>
-              </div>
-            </div>
-          </Show>
-        )}
-      </Show>
       <header class="app-header">
         <div class="brand-block">
           <span class="brand-index">LOCAL / 001</span>
@@ -264,24 +234,31 @@ export function SkillDashboard() {
         when={snapshot()}
         fallback={
           <section class="initial-loading" aria-live="polite">
-            <span class="loading-rule" classList={{ "loading-rule-progress": !!progress() }} aria-hidden="true" />
+            <div class="loading-ring" aria-hidden="true">
+              <div class="loading-ring-outer">
+                {Array.from({ length: 12 }, (_, i) => (
+                  <span
+                    class="loading-ring-tick"
+                    style={{ "--i": String(i) }}
+                  />
+                ))}
+              </div>
+              <div class="loading-ring-inner" />
+            </div>
             <p>파일시스템을 읽는 중</p>
             <Show
               when={progress()}
               fallback={<small>SKILL.md와 심볼릭 링크를 조사합니다.</small>}
             >
               {(p) => (
-                <div class="progress-stats">
-                  <span>📁 {p().visitedDirs.toLocaleString("ko-KR")} / {p().discoveredDirs.toLocaleString("ko-KR")} 디렉터리</span>
+                <div class="loading-ring-stats">
+                  <span>📁 {p().visitedDirs.toLocaleString("ko-KR")} 디렉터리</span>
                   <span>📄 {p().skillsFound.toLocaleString("ko-KR")} skill</span>
                   <span>🔗 {p().linksFound.toLocaleString("ko-KR")} 링크</span>
                   <span>⏱ {p().elapsedMs.toLocaleString("ko-KR")}ms</span>
                 </div>
               )}
             </Show>
-            <div class="loading-stats" aria-hidden="true">
-              <i /><i /><i /><i /><i /><i />
-            </div>
             <Show when={snapshot.error}><strong>{snapshot.error?.message}</strong></Show>
           </section>
         }

@@ -19,20 +19,7 @@
 .scan-rail i { display: block; width: 45%; height: 100%; background: var(--accent); opacity: 0; }
 .scan-rail.active i { opacity: 1; animation: scan-pass 0.9s ease-in-out infinite; }
 
-.scan-progress-overlay { position: fixed; inset: 0; z-index: 65; display: flex; align-items: center; justify-content: center; background: rgb(15 23 36 / 0.82); backdrop-filter: blur(4px); }
-.scan-progress-content { display: grid; justify-items: center; gap: 1.5rem; padding: 2.5rem 3rem; }
-.scan-progress-kicker { color: var(--accent); font: 700 0.72rem/1 var(--mono); letter-spacing: 0.2em; }
-.scan-progress-grid { display: flex; gap: 2.5rem; }
-.scan-progress-cell { display: grid; justify-items: center; gap: 0.4rem; }
-.scan-progress-cell strong { font: 680 clamp(2rem, 4vw, 3.2rem)/1 var(--display); letter-spacing: -0.03em; color: white; }
-.scan-progress-cell span { color: var(--muted); font: 700 0.62rem/1 var(--mono); letter-spacing: 0.1em; }
-.scan-progress-bar-line { width: min(30rem, 70vw); height: 3px; overflow: hidden; background: var(--line-strong); }
-.scan-progress-bar-line i { display: block; width: 45%; height: 100%; background: var(--accent); animation: scan-pass 0.9s ease-in-out infinite; }
-
-.progress-stats { width: min(44rem, 90vw); display: flex; flex-wrap: wrap; gap: 0.35rem 1.2rem; margin-top: 0.5rem; }
-.progress-stats span { color: var(--muted); font: 0.66rem/1.3 var(--mono); }
-.loading-rule-progress { position: relative; }
-.loading-rule-progress::after { animation-duration: 0.6s; }
+.scan-progress-overlay { display: none; }
 
 .app-header {
   min-height: 15rem;
@@ -161,15 +148,32 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
 .empty-state > span { color: var(--accent); font: 300 4rem/1 var(--display); }
 .empty-state p { color: var(--muted); font-size: 0.78rem; }
 
-.initial-loading { min-height: calc(100vh - 15rem); display: grid; align-content: center; justify-items: start; gap: 0.45rem; }
+.initial-loading { min-height: calc(100vh - 15rem); display: grid; align-content: center; justify-items: center; gap: 1.2rem; }
 .initial-loading p { font: 700 clamp(1.6rem, 4vw, 3.2rem)/1 var(--display); }
 .initial-loading small { color: var(--muted); }
 .initial-loading strong { margin-top: 1rem; color: var(--danger); }
-.loading-rule { width: min(22rem, 70vw); height: 3px; overflow: hidden; background: var(--line); }
-.loading-rule::after { content: ""; display: block; width: 45%; height: 100%; background: var(--accent); animation: scan-pass 1s ease-in-out infinite; }
-.loading-stats { width: min(44rem, 90vw); display: grid; grid-template-columns: repeat(6, 1fr); margin-top: 1.2rem; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.loading-stats i { height: 4.5rem; border-right: 1px solid var(--line); background: linear-gradient(100deg, transparent 25%, rgb(255 255 255 / 0.65) 45%, transparent 65%); background-size: 220% 100%; animation: scan-pass 1.6s ease-in-out infinite; }
-.loading-stats i:last-child { border-right: 0; }
+
+/* Circular loading ring (yzavoku-inspired) */
+.loading-ring { position: relative; width: 14rem; height: 14rem; display: grid; place-items: center; }
+.loading-ring-outer { position: absolute; inset: 0; animation: ring-spin 12s linear infinite; }
+.loading-ring-tick {
+  position: absolute; top: 50%; left: 50%;
+  width: 3px; height: 1.6rem; margin: calc(-0.8rem) 0 0 -1.5px;
+  background: var(--accent); border-radius: 1px;
+  transform-origin: center 7rem;
+  transform: rotate(calc(var(--i) * 30deg)) translateY(-7rem);
+  opacity: calc(0.2 + var(--i) * 0.06);
+  animation: tick-pulse 1.8s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.15s);
+}
+.loading-ring-inner {
+  width: 5rem; height: 5rem; border: 2px solid var(--line); border-top-color: var(--accent);
+  border-radius: 50%; animation: ring-spin 1.1s linear infinite;
+}
+@keyframes ring-spin { to { transform: rotate(360deg); } }
+@keyframes tick-pulse { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+.loading-ring-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem 1.5rem; margin-top: 0.3rem; }
+.loading-ring-stats span { color: var(--muted); font: 0.68rem/1.3 var(--mono); }
 
 .taxonomy-panel { padding: 2rem 0 3rem; }
 .taxonomy-heading { padding-bottom: 1rem; border-bottom: 1px solid var(--ink); }
@@ -436,7 +440,7 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scan-rail.active i, .loading-rule::after, .loading-rule-progress::after, .loading-stats i, .scan-progress-bar-line i { animation: none; }
+  .scan-rail.active i, .loading-ring-inner, .loading-ring-outer, .loading-ring-tick { animation: none; }
   td, .detail-panel { animation: none; }
   .scan-control > button, .scan-mode-control button, .view-tabs button::after { transition: none; }
 }
