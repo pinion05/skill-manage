@@ -100,7 +100,9 @@ describe("smoke process cleanup", () => {
     // exits instantly so the test exercises the outcome check, not process
     // spawn timing.
     const spawnProcess: SpawnProcess = () => (
-      spawn(process.execPath, ["--input-type=module", "--eval", "process.exit(0)"], { stdio: "ignore" })
+      spawn(process.execPath, ["--input-type=module", "--eval", "process.exit(0)"], {
+        stdio: ["ignore", "pipe", "pipe"],
+      })
     );
     const child = { pid: 12345, exitCode: null, signalCode: null };
     const outcome = Promise.resolve({ code: 9, signal: null });
