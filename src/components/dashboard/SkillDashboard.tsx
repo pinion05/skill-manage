@@ -189,8 +189,7 @@ export function SkillDashboard() {
       <header class="app-header">
         <div class="brand-block">
           <span class="brand-index">LOCAL / 001</span>
-          <h1><span>SKILL</span><span>ATLAS</span></h1>
-          <p>코딩 에이전트의 skill 파일과 링크를 한곳에서 읽습니다.</p>
+          <h1>skill-manage</h1>
         </div>
 
         <div class="scan-control">
@@ -356,6 +355,7 @@ export function SkillDashboard() {
               <Match when={view() === "agents"}>
                 <AgentSkillsPanel
                   projection={agentSkills()}
+                  selectedId={selected()?.id}
                   onSelect={(skill, trigger) => {
                     detailTrigger = trigger;
                     setSelected(skill);

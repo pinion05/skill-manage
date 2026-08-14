@@ -391,8 +391,10 @@ describe("SkillDashboard", () => {
     expect(await screen.findByRole("button", { name: "에이전트 1" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "프로젝트 2" })).toBeInTheDocument();
 
-    // Agent tab: skills are rendered in a single AG Grid, grouped by agent label column.
+    // Agent tab: now shows agent cards. Click Claude Code card to see its skills.
     fireEvent.click(screen.getByRole("button", { name: "에이전트 1" }));
+    const claudeCard = await screen.findByRole("button", { name: /Claude Code/i });
+    fireEvent.click(claudeCard);
     const agentTrigger = await screen.findByRole("button", { name: /global-skill.*상세 보기/ });
     expect(agentTrigger).toBeInTheDocument();
     // Project-only and document-only records are excluded from the agent (non-project) view.

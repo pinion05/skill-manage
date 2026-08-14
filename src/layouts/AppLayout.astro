@@ -7,7 +7,7 @@ interface Props {
 }
 
 const {
-  title = "Skill Atlas",
+  title = "skill-manage — 로컬 스킬 인벤토리",
   description = "로컬 코딩 에이전트 스킬 인벤토리",
 } = Astro.props;
 ---
@@ -19,6 +19,9 @@ const {
     <meta name="viewport" content="width=device-width" />
     <meta name="description" content={description} />
     <meta name="theme-color" content="#edf0f2" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
     <title>{title}</title>
   </head>
   <body>

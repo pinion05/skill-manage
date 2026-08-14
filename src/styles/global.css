@@ -24,9 +24,9 @@
     --success: #16715c;
     --success-soft: #dff2ec;
     --warning: #a56111;
-    --mono: "SFMono-Regular", "Cascadia Code", "Roboto Mono", monospace;
-    --sans: "Avenir Next", Avenir, ui-sans-serif, system-ui, sans-serif;
-    --display: "Avenir Next Condensed", "Arial Narrow", var(--sans);
+    --mono: "JetBrains Mono", "SFMono-Regular", "Cascadia Code", monospace;
+    --sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --display: "Space Grotesk", var(--sans);
     --shadow-panel: -18px 0 50px rgb(21 34 57 / 0.14);
   }
 
