@@ -148,30 +148,32 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
 .empty-state > span { color: var(--accent); font: 300 4rem/1 var(--display); }
 .empty-state p { color: var(--muted); font-size: 0.78rem; }
 
-.initial-loading { min-height: calc(100vh - 15rem); display: grid; align-content: center; justify-items: center; gap: 1.2rem; }
+.initial-loading { min-height: calc(100vh - 15rem); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.2rem; }
 .initial-loading p { font: 700 clamp(1.6rem, 4vw, 3.2rem)/1 var(--display); }
 .initial-loading small { color: var(--muted); }
 .initial-loading strong { margin-top: 1rem; color: var(--danger); }
 
 /* Circular loading ring (yzavoku-inspired) */
-.loading-ring { position: relative; width: 14rem; height: 14rem; display: grid; place-items: center; }
-.loading-ring-outer { position: absolute; inset: 0; animation: ring-spin 12s linear infinite; }
+.loading-ring { position: relative; width: 12rem; height: 12rem; margin-bottom: 0.5rem; }
+.loading-ring-outer { position: absolute; inset: 0; border-radius: 50%; border: 1px solid var(--line); animation: ring-spin 14s linear infinite; }
 .loading-ring-tick {
-  position: absolute; top: 50%; left: 50%;
-  width: 3px; height: 1.6rem; margin: calc(-0.8rem) 0 0 -1.5px;
+  position: absolute;
+  top: 0; left: 50%;
+  width: 2px; height: 1.2rem; margin-left: -1px;
   background: var(--accent); border-radius: 1px;
-  transform-origin: center 7rem;
-  transform: rotate(calc(var(--i) * 30deg)) translateY(-7rem);
-  opacity: calc(0.2 + var(--i) * 0.06);
+  transform-origin: 1px 6rem;
+  transform: rotate(calc(var(--i) * 30deg));
+  opacity: 0.15;
   animation: tick-pulse 1.8s ease-in-out infinite;
   animation-delay: calc(var(--i) * 0.15s);
 }
 .loading-ring-inner {
-  width: 5rem; height: 5rem; border: 2px solid var(--line); border-top-color: var(--accent);
+  position: absolute; top: 50%; left: 50%; width: 3rem; height: 3rem; margin: -1.5rem 0 0 -1.5rem;
+  border: 2px solid var(--line); border-top-color: var(--accent);
   border-radius: 50%; animation: ring-spin 1.1s linear infinite;
 }
 @keyframes ring-spin { to { transform: rotate(360deg); } }
-@keyframes tick-pulse { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+@keyframes tick-pulse { 0%, 100% { opacity: 0.12; } 50% { opacity: 1; } }
 .loading-ring-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem 1.5rem; margin-top: 0.3rem; }
 .loading-ring-stats span { color: var(--muted); font: 0.68rem/1.3 var(--mono); }
 
