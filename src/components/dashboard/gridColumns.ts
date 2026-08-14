@@ -186,8 +186,10 @@ export function useSkillGrid(host: () => HTMLDivElement | undefined, options: Gr
       onRowClicked: (params: RowClickedEvent) => {
         const data = params.data;
         if (!data) return;
-        const trigger = (params.event as MouseEvent)?.target as HTMLElement;
-        options.onSelect(data.skill, trigger ?? (params.event as MouseEvent)?.currentTarget as HTMLElement);
+        const target = (params.event as MouseEvent)?.target as HTMLElement | undefined;
+        // Use the focusable skill-name button for focus restoration, not the raw click target (which may be a non-focusable div/span/code).
+        const button = target?.closest(".ag-row")?.querySelector<HTMLElement>(".skill-name");
+        options.onSelect(data.skill, button ?? target ?? (params.event as MouseEvent)?.currentTarget as HTMLElement);
       },
     });
   });
