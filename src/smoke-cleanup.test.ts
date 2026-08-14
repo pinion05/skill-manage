@@ -95,17 +95,21 @@ describe("smoke process cleanup", () => {
   });
 
   it("rejects a non-success Windows child outcome when graceful cleanup is required", async () => {
-    const spawnProcess: SpawnProcess = (_command, _args, options) => (
-      spawn(process.execPath, ["--input-type=module", "--eval", "process.exit(0)"], options)
+    // The real process exits immediately, but on Windows spawning taskkill
+    // (even a no-op) can exceed a 100ms budget. Use a fake spawnProcess that
+    // exits instantly so the test exercises the outcome check, not process
+    // spawn timing.
+    const spawnProcess: SpawnProcess = () => (
+      spawn(process.execPath, ["--input-type=module", "--eval", "process.exit(0)"], { stdio: "ignore" })
     );
     const child = { pid: 12345, exitCode: null, signalCode: null };
     const outcome = Promise.resolve({ code: 9, signal: null });
 
-    await expect(terminateProcessTree(child, outcome, {
+    await expect(deadline(terminateProcessTree(child, outcome, {
       platform: "win32",
       requireGraceful: true,
-      stopTimeoutMs: 100,
+      stopTimeoutMs: 5_000,
       spawnProcess,
-    })).rejects.toThrow("did not exit cleanly (exit code 9)");
+    }))).rejects.toThrow("did not exit cleanly (exit code 9)");
   });
 });
