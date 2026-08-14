@@ -66,7 +66,7 @@ describe("createInventoryStore", () => {
     const first = store.getInventory();
     const second = store.getInventory();
     expect(scan).toHaveBeenCalledTimes(1);
-    expect(scan).toHaveBeenCalledWith("official");
+    expect(scan).toHaveBeenCalledWith("official", undefined);
 
     const result = snapshot();
     release?.(result);
@@ -88,8 +88,8 @@ describe("createInventoryStore", () => {
     await expect(firstOfficial).resolves.toMatchObject({ scanMode: "official" });
     await expect(secondOfficial).resolves.toMatchObject({ scanMode: "official" });
     await expect(full).resolves.toMatchObject({ scanMode: "full" });
-    expect(scan).toHaveBeenNthCalledWith(1, "official");
-    expect(scan).toHaveBeenNthCalledWith(2, "full");
+    expect(scan).toHaveBeenNthCalledWith(1, "official", undefined);
+    expect(scan).toHaveBeenNthCalledWith(2, "full", undefined);
   });
 
   it("keeps the previous snapshot when refresh fails", async () => {

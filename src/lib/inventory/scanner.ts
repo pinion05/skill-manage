@@ -10,6 +10,7 @@ import { classifyPath, findSkillsRoot, inferAgentLabel, inferConfigRoot } from "
 import type {
   InventoryRoot,
   InventorySnapshot,
+  ProgressCallback,
   ScanError,
   SkillLink,
   SkillRecord,
@@ -33,6 +34,7 @@ export interface ScanOptions {
   maxLinkTargetDirectories: number;
   maxDirectories: number;
   followDirectoryLinks: boolean;
+  onProgress?: ProgressCallback;
 }
 
 const SKILL_FILE = "skill.md";
@@ -222,6 +224,7 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
   const defaults = defaultScanOptions(overrides.home);
   const options: ScanOptions = { ...defaults, ...overrides };
   const startedAt = performance.now();
+  const onProgress = options.onProgress;
   const availableSearchRoots = await existingDirectories(options.roots);
   const directoryBudget = Math.max(1, Math.floor(options.maxDirectories));
   const searchRoots = availableSearchRoots.slice(0, directoryBudget);
@@ -230,6 +233,23 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
   const links: SkillLink[] = [];
   const errorSamples: ScanError[] = [];
   let errorCount = 0;
+  const visitedDirectories = new Set<string>();
+  let discoveredDirectories = 0;
+  let lastReport = 0;
+  const reportProgress = (): void => {
+    if (!onProgress) return;
+    const now = performance.now();
+    if (now - lastReport < 100) return;
+    lastReport = now;
+    onProgress({
+      discoveredDirs: discoveredDirectories,
+      visitedDirs: visitedDirectories.size,
+      skillsFound: skills.length,
+      linksFound: links.length,
+      searchRoots: searchRoots.length,
+      elapsedMs: Math.round(now - startedAt),
+    });
+  };
 
   const recordError = (error: unknown, errorPath: string): void => {
     errorCount += 1;
@@ -348,8 +368,7 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
   };
 
   const queue = [...searchRoots];
-  const visitedDirectories = new Set<string>();
-  let discoveredDirectories = queue.length;
+  discoveredDirectories = queue.length;
   let scanLimitRecorded = false;
   let pending = queue.length;
   const waiters: Array<() => void> = [];
@@ -438,6 +457,7 @@ export async function scanInventory(overrides: Partial<ScanOptions> = {}): Promi
       recordError(error, directoryPath);
     } finally {
       pending -= 1;
+      reportProgress();
       if (pending === 0) wakeAll();
     }
   };
