@@ -401,8 +401,10 @@ describe("SkillDashboard", () => {
     expect(screen.queryByText("project-only")).not.toBeInTheDocument();
     expect(screen.queryByText("document-only")).not.toBeInTheDocument();
 
-    // Project tab: directory-grouped grid merges aliases by physical inode.
+    // Project tab: now shows project directory cards. Click the "app" card to see skills.
     fireEvent.click(screen.getByRole("button", { name: "프로젝트 2" }));
+    const appCard = await screen.findByRole("button", { name: /app\s+\d+\s+skill/i });
+    fireEvent.click(appCard);
     const projectTrigger = await screen.findByRole("button", { name: /project-only.*상세 보기/ });
     expect(projectTrigger).toBeInTheDocument();
     expect(screen.getByText("global-skill")).toBeInTheDocument();

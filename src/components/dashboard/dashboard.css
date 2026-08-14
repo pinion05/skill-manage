@@ -190,6 +190,26 @@ tr.is-selected { box-shadow: inset 3px 0 var(--accent); }
 .agent-detail-logo { width:3.5rem; height:3.5rem; }
 
 .taxonomy-panel { padding: 2rem 0 3rem; }
+
+/* Project cards */
+.project-card-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(16rem, 1fr)); gap:0.8rem; padding:1.5rem 0; }
+.project-card {
+  position:relative; display:flex; align-items:center; gap:0.9rem; padding:1rem 1.2rem;
+  border:1px solid var(--line); border-radius:8px; background:var(--surface-strong); cursor:pointer;
+  transition:border-color 180ms, transform 180ms, box-shadow 180ms;
+}
+.project-card:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 4px 16px rgb(21 34 57 / 0.08); }
+.project-card:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.project-card-icon, .project-detail-icon {
+  flex:0 0 auto; width:2.6rem; height:2.6rem; display:grid; place-items:center; border-radius:6px;
+  background:var(--accent-soft); color:var(--accent); font:700 1.1rem/1 var(--display);
+}
+.project-card-body { min-width:0; display:grid; gap:0.1rem; flex:1; }
+.project-card-body strong { font-size:0.84rem; font-weight:700; }
+.project-card-body span { color:var(--muted); font:0.62rem/1 var(--mono); }
+.project-card-body code { color:var(--muted); font:0.58rem/1.3 var(--mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.project-card-badge { position:absolute; top:0.5rem; right:0.6rem; padding:0.15rem 0.4rem; background:var(--accent-soft); color:var(--accent); font:700 0.55rem/1 var(--mono); border-radius:3px; }
+.project-detail-icon { width:3.5rem; height:3.5rem; font-size:1.4rem; }
 .taxonomy-heading { padding-bottom: 1rem; border-bottom: 1px solid var(--ink); }
 .taxonomy-heading h2 { margin-top: 0.35rem; font: 700 clamp(1.8rem, 3vw, 2.8rem)/1 var(--display); }
 .taxonomy-heading p:last-child { margin-top: 0.5rem; color: var(--muted); font-size: 0.8rem; }

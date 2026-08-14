@@ -365,6 +365,7 @@ export function SkillDashboard() {
               <Match when={view() === "projects"}>
                 <ProjectSkillsPanel
                   projection={projectSkills()}
+                  selectedId={selected()?.id}
                   onSelect={(skill, trigger) => {
                     detailTrigger = trigger;
                     setSelected(skill);
