@@ -104,7 +104,7 @@ function deriveAliases(ownerId: string, agentName: string): string[] {
   // "Pi" → "pi"
   if (name === "pi" || ownerId === "pi") aliases.push("pi");
   // Shared
-  if (ownerId === "shared" || name.includes("공유")) aliases.push("hermesagent");
+  if (ownerId === "shared" || name.includes("공유")) aliases.push("shared");
 
   return aliases;
 }
