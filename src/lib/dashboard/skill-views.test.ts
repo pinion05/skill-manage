@@ -1,3 +1,4 @@
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type {
   OfficialSourceScope,
@@ -156,6 +157,22 @@ describe("inferProjectDirectory", () => {
     expect(inferProjectDirectory("/Users/me/dev/app/.roo/skills-debug")).toBe("/Users/me/dev/app");
     expect(inferProjectDirectory("/Users/me/workspace/skills")).toBe("/Users/me/workspace");
     expect(inferProjectDirectory("relative/.claude/skills")).toBeUndefined();
+  });
+
+  it("derives project directories from Windows absolute paths", () => {
+    expect(inferProjectDirectory("C:\\Users\\me\\dev\\app\\.agents\\skills")).toBe(
+      ["C:", "Users", "me", "dev", "app"].join(path.sep),
+    );
+    expect(inferProjectDirectory("C:\\Users\\me\\workspace\\skills")).toBe(
+      ["C:", "Users", "me", "workspace"].join(path.sep),
+    );
+    // Drive-letter parents (C:) are bounded like the POSIX "/" root:
+    // inferProjectDirectory("/custom/root", "/agent") is undefined too.
+    expect(inferProjectDirectory("C:\\custom\\root", "C:\\agent")).toBeUndefined();
+    expect(inferProjectDirectory("C:\\custom\\root", "C:")).toBeUndefined();
+    // POSIX behavior must be unchanged: forward-slash separators, "/"-rooted.
+    expect(inferProjectDirectory("/Users/me/dev/app/.claude/skills")).toBe("/Users/me/dev/app");
+    expect(inferProjectDirectory("/custom/root", "/")).toBeUndefined();
   });
 
   it("uses full-mode fallback without mixing project records into agents", () => {

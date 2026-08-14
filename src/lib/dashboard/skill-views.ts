@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { OfficialSourceOwner, SkillRecord } from "../inventory/types";
 
 export interface SkillViewAlias {
@@ -90,24 +91,36 @@ function sortAliases(aliases: SkillViewAlias[]): SkillViewAlias[] {
   );
 }
 
+// path.isAbsolute("C:\\...") is false on POSIX, so also accept Windows
+// drive-letter and UNC prefixes regardless of the host platform.
+function isAbsolutePathLike(value: string): boolean {
+  return path.isAbsolute(value) || /^(?:[A-Za-z]:[\\/]|\\\\)/.test(value);
+}
+
 export function inferProjectDirectory(
   skillsRoot: string,
   configRoot?: string,
 ): string | undefined {
   for (const candidate of [skillsRoot, configRoot]) {
-    if (!candidate?.startsWith("/")) continue;
-    const parts = candidate.replace(/\/+$/, "").split("/");
+    if (!candidate || !isAbsolutePathLike(candidate)) continue;
+    const parts = candidate.replace(/[\\/]+$/, "").split(/[\\/]+/);
     const markerIndex = parts.findLastIndex((part) => PROJECT_MARKERS.has(part));
-    if (markerIndex > 1) return parts.slice(0, markerIndex).join("/");
-    if (parts.at(-1) === "skills" && parts.length > 2) return parts.slice(0, -1).join("/");
+    if (markerIndex > 1) return parts.slice(0, markerIndex).join(path.sep) || path.sep;
+    if (parts.at(-1)?.toLowerCase() === "skills" && parts.length > 2) {
+      return parts.slice(0, -1).join(path.sep) || path.sep;
+    }
   }
 
-  const normalizedConfigRoot = configRoot?.replace(/\/+$/, "");
-  if (!normalizedConfigRoot?.startsWith("/")) return undefined;
-  const separatorIndex = normalizedConfigRoot.lastIndexOf("/");
+  const normalizedConfigRoot = configRoot?.replace(/[\\/]+$/, "");
+  if (!normalizedConfigRoot || !isAbsolutePathLike(normalizedConfigRoot)) return undefined;
+  const separatorIndex = Math.max(
+    normalizedConfigRoot.lastIndexOf("/"),
+    normalizedConfigRoot.lastIndexOf("\\"),
+  );
   if (separatorIndex <= 0) return undefined;
   const parent = normalizedConfigRoot.slice(0, separatorIndex);
-  return parent === "/" ? undefined : parent;
+  // Reject filesystem roots ("/", "\\", "C:") like the POSIX-only code did.
+  return parent === "/" || parent === "\\" || /^[A-Za-z]:$/.test(parent) ? undefined : parent;
 }
 
 export function createAgentSkillProjection(records: SkillRecord[]): AgentSkillProjection {

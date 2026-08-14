@@ -89,7 +89,16 @@ function shouldExclude(directoryPath: string, name: string): boolean {
     joined.includes("/.npm/_cacache/") ||
     joined.endsWith("/.npm/_cacache") ||
     joined.includes("/.bun/install/cache/") ||
-    joined.endsWith("/.bun/install/cache")
+    joined.endsWith("/.bun/install/cache") ||
+    // Windows: npm/pnpm cache + OS temp live under AppData\Local.
+    joined.includes("/AppData/Local/npm-cache/") ||
+    joined.endsWith("/AppData/Local/npm-cache") ||
+    joined.includes("/AppData/Local/Temp/") ||
+    joined.endsWith("/AppData/Local/Temp") ||
+    joined.includes("/AppData/Local/pnpm-cache/") ||
+    joined.endsWith("/AppData/Local/pnpm-cache") ||
+    joined.includes("/AppData/Local/pnpm/store/") ||
+    joined.endsWith("/AppData/Local/pnpm/store")
   );
 }
 

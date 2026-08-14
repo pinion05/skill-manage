@@ -12,7 +12,34 @@ permissions:
   contents: write   # GitHub Release/태그 생성용
 
 jobs:
+  verify:
+    # Cross-platform regression gate: the package runs on macOS/Linux/Windows.
+    # verify runs on all three; publish stays on Linux (one npm publish).
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      # npm install (not npm ci): cross-platform lockfiles can miss
+      # platform-specific optional deps and npm ci would hard-fail.
+      - name: Install
+        run: npm install --no-audit --no-fund
+
+      - name: Verify (test + check + build)
+        run: npm run verify
+
   publish:
+    needs: verify
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

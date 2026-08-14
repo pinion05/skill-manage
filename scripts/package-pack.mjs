@@ -1,7 +1,13 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { runCaptured } from "./smoke-cleanup.mjs";
+
+const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
+const { name: packageName, version: packageVersion } = JSON.parse(
+  await readFile(join(packageRoot, "package.json"), "utf8"),
+);
 
 export function parsePackJson(stdout) {
   for (let index = stdout.lastIndexOf("["); index >= 0; index = stdout.lastIndexOf("[", index - 1)) {
@@ -20,10 +26,10 @@ export function inspectPack(packJson) {
     throw new Error("npm pack --json did not describe exactly one package");
   }
   const pack = packJson[0];
-  if (pack.name !== "skill-manage" || pack.version !== "0.1.0") {
+  if (pack.name !== packageName || pack.version !== packageVersion) {
     throw new Error(`Unexpected packed package: ${pack.name}@${pack.version}`);
   }
-  if (pack.filename !== "skill-manage-0.1.0.tgz") {
+  if (pack.filename !== `${packageName}-${packageVersion}.tgz`) {
     throw new Error(`Unexpected tarball filename: ${pack.filename}`);
   }
   if (!Array.isArray(pack.files) || pack.files.length === 0) {

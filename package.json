@@ -6,7 +6,7 @@
     "dev": "astro dev",
     "build": "astro build && node scripts/fix-build-paths.mjs",
     "preview": "astro preview",
-    "start": "HOST=127.0.0.1 node ./dist/server/entry.mjs",
+    "start": "node ./scripts/start.mjs",
     "check": "astro check",
     "test": "vitest run",
     "test:watch": "vitest",

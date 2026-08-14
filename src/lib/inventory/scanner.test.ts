@@ -109,6 +109,23 @@ describe("scanInventory", () => {
     expect(snapshot.skills.filter((skill) => skill.name === "alpha")).toHaveLength(1);
   });
 
+  it("skips Windows npm/pnpm cache and temp directories during full scans", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "skill-atlas-win-"));
+    fixtures.push(root);
+    // Simulate the Windows layout the exclusion list targets. shouldExclude
+    // normalizes separators, so backslash inputs match the /-based patterns.
+    const cachedSkill = path.join(root, "AppData", "Local", "npm-cache", "_cacache", "skill");
+    const keptSkill = path.join(root, ".codex", "skills", "kept");
+    await Promise.all([mkdir(cachedSkill, { recursive: true }), mkdir(keptSkill, { recursive: true })]);
+    await Promise.all([
+      writeFile(path.join(cachedSkill, "SKILL.md"), "---\nname: cached\n---\n"),
+      writeFile(path.join(keptSkill, "SKILL.md"), "---\nname: kept\n---\n"),
+    ]);
+
+    const snapshot = await scanInventory({ roots: [root], home: root });
+    expect(snapshot.skills.map((skill) => skill.name)).toEqual(["kept"]);
+  });
+
   it("follows skill-directory links only when enabled and stops directory cycles", async () => {
     const root = await makeFixture();
     const linkRoot = path.join(root, "opt-in", "skills");
