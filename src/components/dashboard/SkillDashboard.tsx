@@ -234,16 +234,10 @@ export function SkillDashboard() {
         when={snapshot()}
         fallback={
           <section class="initial-loading" aria-live="polite">
-            <div class="loading-ring" aria-hidden="true">
-              <div class="loading-ring-outer">
-                {Array.from({ length: 12 }, (_, i) => (
-                  <span
-                    class="loading-ring-tick"
-                    style={{ "--i": String(i) }}
-                  />
-                ))}
-              </div>
-              <div class="loading-ring-inner" />
+            <div class="loading-grid" aria-hidden="true">
+              {Array.from({ length: 9 }, (_, i) => (
+                <span style={{ "--i": String(i) }} />
+              ))}
             </div>
             <p>파일시스템을 읽는 중</p>
             <Show
@@ -251,7 +245,7 @@ export function SkillDashboard() {
               fallback={<small>SKILL.md와 심볼릭 링크를 조사합니다.</small>}
             >
               {(p) => (
-                <div class="loading-ring-stats">
+                <div class="loading-grid-stats">
                   <span>📁 {p().visitedDirs.toLocaleString("ko-KR")} 디렉터리</span>
                   <span>📄 {p().skillsFound.toLocaleString("ko-KR")} skill</span>
                   <span>🔗 {p().linksFound.toLocaleString("ko-KR")} 링크</span>
