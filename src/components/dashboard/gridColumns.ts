@@ -1,6 +1,6 @@
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-quartz.css";
-import { createGrid, type GridApi, type ICellRendererParams } from "ag-grid-community";
+import { createGrid, type GridApi, type ICellRendererParams, type RowClickedEvent } from "ag-grid-community";
 import { createEffect, onCleanup, onMount } from "solid-js";
 import type { SkillRecord } from "../../lib/inventory/types";
 import { kindLabel } from "./FilterBar";
@@ -183,6 +183,14 @@ export function useSkillGrid(host: () => HTMLDivElement | undefined, options: Gr
       defaultColDef: { resizable: true, sortable: true },
       suppressCellFocus: true,
       suppressScrollOnNewData: true,
+      onRowClicked: (params: RowClickedEvent) => {
+        const data = params.data;
+        if (!data) return;
+        const target = (params.event as MouseEvent)?.target as HTMLElement | undefined;
+        // Use the focusable skill-name button for focus restoration, not the raw click target (which may be a non-focusable div/span/code).
+        const button = target?.closest(".ag-row")?.querySelector<HTMLElement>(".skill-name");
+        options.onSelect(data.skill, button ?? target ?? (params.event as MouseEvent)?.currentTarget as HTMLElement);
+      },
     });
   });
 
